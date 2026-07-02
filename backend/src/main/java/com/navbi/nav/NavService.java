@@ -15,10 +15,12 @@ public class NavService {
 
     private final NavItemMapper navItemMapper;
     private final CounterService counterService;
+    private final IconService iconService;
 
-    public NavService(NavItemMapper navItemMapper, CounterService counterService) {
+    public NavService(NavItemMapper navItemMapper, CounterService counterService, IconService iconService) {
         this.navItemMapper = navItemMapper;
         this.counterService = counterService;
+        this.iconService = iconService;
     }
 
     /** 前台导航：仅启用项，按分类分组，组内按 sort 升序。 */
@@ -79,10 +81,12 @@ public class NavService {
         if (navItemMapper.updateById(item) == 0) {
             throw new IllegalArgumentException("导航不存在: " + item.getId());
         }
+        iconService.evict(item.getId());
     }
 
     public void delete(Long id) {
         navItemMapper.deleteById(id);
+        iconService.evict(id);
     }
 
     /** 点击计数：PV 直接 +1；UV 借助 Redis SET 按 sessionId 去重。 */

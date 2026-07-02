@@ -29,11 +29,11 @@
           >
             <span class="icon">
               <img
-                v-if="iconSrc(item)"
+                v-if="!iconFailed[item.id]"
                 :src="iconSrc(item)"
                 alt=""
                 loading="lazy"
-                @error="nextIcon(item)"
+                @error="iconFailed[item.id] = true"
               />
               <template v-else>{{ fallbackEmoji(item) }}</template>
             </span>
@@ -56,7 +56,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
-import { iconCandidates, fallbackEmoji } from '../icon'
+import { iconSrc, fallbackEmoji } from '../icon'
 
 const groups = ref([])
 const keyword = ref('')
@@ -82,15 +82,7 @@ function onClick(item) {
   http.post(`/nav/click/${item.id}`, null, { headers: { 'X-Session-Id': getSessionId() } }).catch(() => {})
 }
 
-const iconIndex = reactive({})
-
-function iconSrc(item) {
-  return iconCandidates(item)[iconIndex[item.id] || 0] || ''
-}
-
-function nextIcon(item) {
-  iconIndex[item.id] = (iconIndex[item.id] || 0) + 1
-}
+const iconFailed = reactive({})
 
 function host(url) {
   try {

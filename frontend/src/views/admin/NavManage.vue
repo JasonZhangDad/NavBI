@@ -10,11 +10,11 @@
       <el-table-column label="图标" width="70">
         <template #default="{ row }">
           <img
-            v-if="iconSrc(row)"
+            v-if="!iconFailed[row.id]"
             :src="iconSrc(row)"
             class="row-icon"
             alt=""
-            @error="nextIcon(row)"
+            @error="iconFailed[row.id] = true"
           />
           <span v-else>{{ fallbackEmoji(row) }}</span>
         </template>
@@ -71,18 +71,10 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '../../api'
-import { iconCandidates, fallbackEmoji } from '../../icon'
+import { iconSrc, fallbackEmoji } from '../../icon'
 
 const items = ref([])
-const iconIndex = reactive({})
-
-function iconSrc(row) {
-  return iconCandidates(row)[iconIndex[row.id] || 0] || ''
-}
-
-function nextIcon(row) {
-  iconIndex[row.id] = (iconIndex[row.id] || 0) + 1
-}
+const iconFailed = reactive({})
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)

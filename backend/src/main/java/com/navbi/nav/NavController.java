@@ -19,9 +19,27 @@ import java.util.List;
 public class NavController {
 
     private final NavService navService;
+    private final NavItemMapper navItemMapper;
+    private final IconService iconService;
 
-    public NavController(NavService navService) {
+    public NavController(NavService navService, NavItemMapper navItemMapper, IconService iconService) {
         this.navService = navService;
+        this.navItemMapper = navItemMapper;
+        this.iconService = iconService;
+    }
+
+    @GetMapping("/icon/{id}")
+    public org.springframework.http.ResponseEntity<byte[]> icon(@PathVariable Long id) {
+        NavItem item = navItemMapper.selectById(id);
+        if (item == null) {
+            return org.springframework.http.ResponseEntity.notFound().build();
+        }
+        return iconService.iconFor(item)
+                .map(icon -> org.springframework.http.ResponseEntity.ok()
+                        .header("Content-Type", icon.contentType())
+                        .header("Cache-Control", "public, max-age=86400")
+                        .body(icon.bytes()))
+                .orElseGet(() -> org.springframework.http.ResponseEntity.notFound().build());
     }
 
     @GetMapping("/list")

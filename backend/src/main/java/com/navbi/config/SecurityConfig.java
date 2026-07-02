@@ -20,7 +20,8 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/track", "/api/nav/list", "/api/nav/click/**")
+                        .requestMatchers("/api/auth/login", "/api/track", "/api/nav/list", "/api/nav/click/**",
+                                "/api/nav/icon/**")
                         .permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
