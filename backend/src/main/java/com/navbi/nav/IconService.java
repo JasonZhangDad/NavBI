@@ -16,12 +16,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * 服务端代理抓取导航站点 logo：浏览器只请求本站，规避第三方图标源
  * 在部分网络环境不可达的问题。手动配置的图标 URL 可用时优先；否则抓取
- * 全部自动源，用魔数校验真伪（不信任 Content-Type），取字节数最大者
- * 作为最高质量结果。结果内存缓存，导航变更时失效。
+ * 全部自动源，用魔数校验真伪（不信任 Content-Type）。精确 host 源优先，
+ * 根域名只作兜底；同一优先级内取字节数最大者。成功结果内存缓存，导航变更时失效。
  */
 @Slf4j
 @Service
@@ -33,14 +34,32 @@ public class IconService {
     private static final Set<String> TWO_PART_TLD =
             Set.of("com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn", "co.uk", "com.hk", "com.tw");
 
-    private final Map<Long, Optional<Icon>> cache = new ConcurrentHashMap<>();
+    private record IconCandidate(String url, int priority) {
+    }
+
+    private final Map<Long, Icon> cache = new ConcurrentHashMap<>();
+    private final Function<String, Optional<Icon>> fetcher;
     private final HttpClient client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.ALWAYS)
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
+    public IconService() {
+        this.fetcher = this::fetch;
+    }
+
+    IconService(Function<String, Optional<Icon>> fetcher) {
+        this.fetcher = fetcher;
+    }
+
     public Optional<Icon> iconFor(NavItem item) {
-        return cache.computeIfAbsent(item.getId(), id -> fetchBest(item));
+        Icon cached = cache.get(item.getId());
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        Optional<Icon> fetched = fetchBest(item);
+        fetched.ifPresent(icon -> cache.put(item.getId(), icon));
+        return fetched;
     }
 
     public void evict(Long id) {
@@ -49,14 +68,22 @@ public class IconService {
 
     private Optional<Icon> fetchBest(NavItem item) {
         if (item.getIcon() != null && item.getIcon().startsWith("http")) {
-            Optional<Icon> manual = fetch(item.getIcon());
+            Optional<Icon> manual = fetcher.apply(item.getIcon());
             if (manual.isPresent()) {
                 return manual;
             }
         }
         List<Icon> valid = new ArrayList<>();
-        for (String url : autoCandidates(item)) {
-            fetch(url).ifPresent(valid::add);
+        Integer priority = null;
+        for (IconCandidate candidate : autoCandidateSpecs(item)) {
+            if (priority != null && priority != candidate.priority() && !valid.isEmpty()) {
+                return pickBest(valid);
+            }
+            if (priority == null || priority != candidate.priority()) {
+                valid.clear();
+                priority = candidate.priority();
+            }
+            fetcher.apply(candidate.url()).ifPresent(valid::add);
         }
         Optional<Icon> best = pickBest(valid);
         if (best.isEmpty()) {
@@ -70,17 +97,24 @@ public class IconService {
     }
 
     List<String> autoCandidates(NavItem item) {
-        List<String> list = new ArrayList<>();
+        return autoCandidateSpecs(item).stream()
+                .map(IconCandidate::url)
+                .toList();
+    }
+
+    private List<IconCandidate> autoCandidateSpecs(NavItem item) {
+        List<IconCandidate> list = new ArrayList<>();
         try {
             String host = URI.create(item.getUrl()).getHost();
             if (host != null) {
-                list.add("https://icons.duckduckgo.com/ip3/" + host + ".ico");
+                list.add(new IconCandidate("https://icons.duckduckgo.com/ip3/" + host + ".ico", 0));
+                list.add(new IconCandidate("https://www.google.com/s2/favicons?domain=" + host + "&sz=64", 0));
+                list.add(new IconCandidate("https://" + host + "/favicon.ico", 0));
                 String root = rootDomain(host);
                 if (!root.equals(host)) {
-                    list.add("https://icons.duckduckgo.com/ip3/" + root + ".ico");
+                    list.add(new IconCandidate("https://icons.duckduckgo.com/ip3/" + root + ".ico", 1));
+                    list.add(new IconCandidate("https://www.google.com/s2/favicons?domain=" + root + "&sz=64", 1));
                 }
-                list.add("https://www.google.com/s2/favicons?domain=" + host + "&sz=64");
-                list.add("https://" + host + "/favicon.ico");
             }
         } catch (IllegalArgumentException ignored) {
             // URL 非法：无自动源

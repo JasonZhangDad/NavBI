@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,9 +21,24 @@ class IconServiceTest {
         List<String> candidates = iconService.autoCandidates(item);
         assertThat(candidates).containsExactly(
                 "https://icons.duckduckgo.com/ip3/chat.deepseek.com.ico",
-                "https://icons.duckduckgo.com/ip3/deepseek.com.ico",
                 "https://www.google.com/s2/favicons?domain=chat.deepseek.com&sz=64",
-                "https://chat.deepseek.com/favicon.ico");
+                "https://chat.deepseek.com/favicon.ico",
+                "https://icons.duckduckgo.com/ip3/deepseek.com.ico",
+                "https://www.google.com/s2/favicons?domain=deepseek.com&sz=64");
+    }
+
+    @Test
+    void exactHostCandidatesComeBeforeRootDomainFallbacks() {
+        NavItem item = new NavItem();
+        item.setId(1L);
+        item.setUrl("https://tongyi.aliyun.com");
+        List<String> candidates = iconService.autoCandidates(item);
+        assertThat(candidates).containsExactly(
+                "https://icons.duckduckgo.com/ip3/tongyi.aliyun.com.ico",
+                "https://www.google.com/s2/favicons?domain=tongyi.aliyun.com&sz=64",
+                "https://tongyi.aliyun.com/favicon.ico",
+                "https://icons.duckduckgo.com/ip3/aliyun.com.ico",
+                "https://www.google.com/s2/favicons?domain=aliyun.com&sz=64");
     }
 
     @Test
@@ -62,5 +79,23 @@ class IconServiceTest {
         IconService.Icon large = new IconService.Icon(new byte[5000], "image/x-icon");
         assertThat(IconService.pickBest(List.of(small, large))).contains(large);
         assertThat(IconService.pickBest(List.of())).isEmpty();
+    }
+
+    @Test
+    void failedManualFetchIsNotCachedForever() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        IconService service = new IconService(url -> requests.incrementAndGet() == 1
+                ? Optional.empty()
+                : Optional.of(new IconService.Icon(new byte[]{(byte) 0x89, 'P', 'N', 'G'}, "image/png")));
+        NavItem item = new NavItem();
+        item.setId(99L);
+        item.setUrl("not-a-url");
+        item.setIcon("https://cdn.example.com/favicon.png");
+
+        assertThat(service.iconFor(item)).isEmpty();
+        Optional<IconService.Icon> retry = service.iconFor(item);
+
+        assertThat(retry).isPresent();
+        assertThat(requests).hasValue(2);
     }
 }
