@@ -10,13 +10,13 @@
       <el-table-column label="图标" width="70">
         <template #default="{ row }">
           <img
-            v-if="!iconFailed[row.id]"
+            v-if="iconSrc(row)"
             :src="iconSrc(row)"
             class="row-icon"
             alt=""
-            @error="iconFailed[row.id] = true"
+            @error="nextIcon(row)"
           />
-          <span v-else>{{ row.icon || '🔗' }}</span>
+          <span v-else>{{ fallbackEmoji(row) }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="title" label="标题" min-width="140" />
@@ -71,20 +71,17 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '../../api'
+import { iconCandidates, fallbackEmoji } from '../../icon'
 
 const items = ref([])
-const iconFailed = reactive({})
+const iconIndex = reactive({})
 
-/** 与首页一致：手动图片 URL > 站点 favicon > emoji 兜底 */
 function iconSrc(row) {
-  if (row.icon && /^https?:\/\//.test(row.icon)) {
-    return row.icon
-  }
-  try {
-    return `https://icons.duckduckgo.com/ip3/${new URL(row.url).host}.ico`
-  } catch {
-    return ''
-  }
+  return iconCandidates(row)[iconIndex[row.id] || 0] || ''
+}
+
+function nextIcon(row) {
+  iconIndex[row.id] = (iconIndex[row.id] || 0) + 1
 }
 const loading = ref(false)
 const saving = ref(false)

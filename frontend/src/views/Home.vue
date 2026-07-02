@@ -29,13 +29,13 @@
           >
             <span class="icon">
               <img
-                v-if="!iconFailed[item.id]"
+                v-if="iconSrc(item)"
                 :src="iconSrc(item)"
                 alt=""
                 loading="lazy"
-                @error="iconFailed[item.id] = true"
+                @error="nextIcon(item)"
               />
-              <template v-else>{{ isImageIcon(item.icon) ? '🔗' : item.icon || '🔗' }}</template>
+              <template v-else>{{ fallbackEmoji(item) }}</template>
             </span>
             <span class="meta">
               <span class="title">{{ item.title }}</span>
@@ -56,6 +56,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
+import { iconCandidates, fallbackEmoji } from '../icon'
 
 const groups = ref([])
 const keyword = ref('')
@@ -81,22 +82,14 @@ function onClick(item) {
   http.post(`/nav/click/${item.id}`, null, { headers: { 'X-Session-Id': getSessionId() } }).catch(() => {})
 }
 
-function isImageIcon(icon) {
-  return icon && /^https?:\/\//.test(icon)
+const iconIndex = reactive({})
+
+function iconSrc(item) {
+  return iconCandidates(item)[iconIndex[item.id] || 0] || ''
 }
 
-const iconFailed = reactive({})
-
-/** 图标优先级：手动图片 URL > 站点 favicon（按域名自动获取）> emoji 兜底 */
-function iconSrc(item) {
-  if (isImageIcon(item.icon)) {
-    return item.icon
-  }
-  try {
-    return `https://icons.duckduckgo.com/ip3/${new URL(item.url).host}.ico`
-  } catch {
-    return ''
-  }
+function nextIcon(item) {
+  iconIndex[item.id] = (iconIndex[item.id] || 0) + 1
 }
 
 function host(url) {
