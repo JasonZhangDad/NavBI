@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: navbi
+      POSTGRES_USER: navbi
+      POSTGRES_PASSWORD: ${NAVBI_DB_PASSWORD:-navbi}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      NAVBI_DB_URL: jdbc:postgresql://postgres:5432/navbi
+      NAVBI_DB_USER: navbi
+      NAVBI_DB_PASSWORD: ${NAVBI_DB_PASSWORD:-navbi}
+      NAVBI_REDIS_HOST: redis
+      NAVBI_ADMIN_USERNAME: ${NAVBI_ADMIN_USERNAME:-admin}
+      NAVBI_ADMIN_PASSWORD: ${NAVBI_ADMIN_PASSWORD:?请在 .env 中设置管理员密码}
+      NAVBI_JWT_SECRET: ${NAVBI_JWT_SECRET:?请在 .env 中设置 JWT 密钥(>=32字节)}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - '127.0.0.1:8098:80'
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

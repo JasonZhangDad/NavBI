@@ -68,6 +68,7 @@ session_id UNIQUE / ip / start_time / end_time / page_count。每次上报 upser
 ### 管理接口（Bearer JWT）
 | 接口 | 说明 |
 |---|---|
+| `GET /api/nav/all` | 全部导航（含禁用，供管理表格） |
 | `POST /api/nav/add`・`PUT /api/nav/update`・`DELETE /api/nav/delete/{id}` | 导航 CRUD |
 | `GET /api/bi/summary` | `{todayPv, todayUv, totalPv, totalUv, ipCount, yesterdayPv}` |
 | `GET /api/bi/trend?dimension=hour\|day` | hour=近24小时，day=近30天 `[{bucket, pv, uv}]` |
