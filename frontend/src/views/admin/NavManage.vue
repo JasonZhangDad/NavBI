@@ -2,10 +2,20 @@
   <div>
     <div class="toolbar">
       <h3>导航管理</h3>
-      <el-button type="primary" @click="openDialog()">新增导航</el-button>
+      <div class="toolbar-actions">
+        <el-select v-model="categoryFilter" placeholder="全部分类" clearable class="category-filter">
+          <el-option
+            v-for="category in categories"
+            :key="category.id"
+            :label="category.name"
+            :value="category.name"
+          />
+        </el-select>
+        <el-button type="primary" @click="openDialog()">新增导航</el-button>
+      </div>
     </div>
 
-    <el-table :data="items" v-loading="loading" stripe>
+    <el-table :data="displayItems" v-loading="loading" stripe empty-text="没有匹配的导航">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column label="图标" width="70">
         <template #default="{ row }">
@@ -75,19 +85,27 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '../../api'
 import { iconSrc, fallbackEmoji } from '../../icon'
 
 const items = ref([])
 const categories = ref([])
+const categoryFilter = ref('')
 const iconFailed = reactive({})
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const emptyForm = { id: null, title: '', url: '', category: '默认', icon: '', sort: 0, enabled: true }
 const form = reactive({ ...emptyForm })
+
+const displayItems = computed(() => {
+  if (!categoryFilter.value) {
+    return items.value
+  }
+  return items.value.filter((item) => item.category === categoryFilter.value)
+})
 
 async function load() {
   loading.value = true
@@ -148,10 +166,19 @@ onMounted(load)
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .toolbar h3 {
   margin: 0;
+}
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.category-filter {
+  width: 180px;
 }
 .row-icon {
   width: 24px;
