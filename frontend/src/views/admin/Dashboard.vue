@@ -79,6 +79,18 @@
           <el-table-column prop="browser" label="浏览器" width="90" />
           <el-table-column prop="url" label="页面" show-overflow-tooltip />
         </el-table>
+        <div class="pager">
+          <el-pagination
+            v-model:current-page="logPage"
+            v-model:page-size="logPageSize"
+            background
+            layout="total, sizes, prev, pager, next"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="logTotal"
+            @current-change="loadLogs"
+            @size-change="onLogPageSizeChange"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -95,6 +107,9 @@ const INK = { primary: '#0b0b0b', secondary: '#52514e', muted: '#898781', grid: 
 
 const summary = reactive({ todayPv: 0, todayUv: 0, yesterdayPv: 0, totalPv: 0, totalUv: 0, ipCount: 0 })
 const logs = ref([])
+const logPage = ref(1)
+const logPageSize = ref(10)
+const logTotal = ref(0)
 const trendDim = ref('hour')
 const geoLevel = ref('country')
 const loading = ref(false)
@@ -207,22 +222,31 @@ async function loadGeo() {
   charts.geo.setOption(hBarOption((res.data || []).slice(0, 8)), true)
 }
 
+async function loadLogs() {
+  const res = await http.get('/bi/logs', { params: { page: logPage.value, size: logPageSize.value } })
+  logs.value = res.data?.records || []
+  logTotal.value = res.data?.total || 0
+}
+
+function onLogPageSizeChange() {
+  logPage.value = 1
+  loadLogs()
+}
+
 async function loadAll() {
   loading.value = true
   try {
-    const [sum, device, browser, pages, logRes] = await Promise.all([
+    const [sum, device, browser, pages] = await Promise.all([
       http.get('/bi/summary'),
       http.get('/bi/device'),
       http.get('/bi/browser'),
-      http.get('/bi/top-pages'),
-      http.get('/bi/logs', { params: { page: 1, size: 10 } })
+      http.get('/bi/top-pages')
     ])
     Object.assign(summary, sum.data)
     charts.device.setOption(donutOption(device.data || []), true)
     charts.browser.setOption(donutOption(browser.data || []), true)
     charts.pages.setOption(hBarOption(pages.data || []), true)
-    logs.value = logRes.data?.records || []
-    await Promise.all([loadTrend(), loadGeo()])
+    await Promise.all([loadTrend(), loadGeo(), loadLogs()])
   } finally {
     loading.value = false
   }
@@ -322,5 +346,10 @@ onBeforeUnmount(() => {
 }
 .chart-lg {
   height: 320px;
+}
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 </style>

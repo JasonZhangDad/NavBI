@@ -55,10 +55,6 @@
         </div>
       </section>
     </main>
-
-    <footer class="footer">
-      <router-link to="/admin">管理后台</router-link>
-    </footer>
   </div>
 </template>
 
@@ -236,17 +232,5 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.footer {
-  padding: 24px;
-  text-align: center;
-}
-.footer a {
-  color: #898781;
-  font-size: 13px;
-  text-decoration: none;
-}
-.footer a:hover {
-  color: #2a78d6;
 }
 </style>
