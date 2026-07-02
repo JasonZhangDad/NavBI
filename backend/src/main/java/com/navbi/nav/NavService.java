@@ -16,11 +16,14 @@ public class NavService {
     private final NavItemMapper navItemMapper;
     private final CounterService counterService;
     private final IconService iconService;
+    private final NavCategoryService categoryService;
 
-    public NavService(NavItemMapper navItemMapper, CounterService counterService, IconService iconService) {
+    public NavService(NavItemMapper navItemMapper, CounterService counterService, IconService iconService,
+                      NavCategoryService categoryService) {
         this.navItemMapper = navItemMapper;
         this.counterService = counterService;
         this.iconService = iconService;
+        this.categoryService = categoryService;
     }
 
     /** 前台导航：仅启用项，按分类分组，组内按 sort 升序。 */
@@ -55,6 +58,7 @@ public class NavService {
 
     public NavItem add(NavItem item) {
         item.setId(null);
+        item.setCategory(categoryService.requireExistingForNavItem(item.getCategory()));
         if (item.getSort() == null) {
             item.setSort(0);
         }
@@ -78,6 +82,9 @@ public class NavService {
         item.setUvCount(null);
         item.setCreatedAt(null);
         item.setUpdatedAt(LocalDateTime.now());
+        if (item.getCategory() != null) {
+            item.setCategory(categoryService.requireExistingForNavItem(item.getCategory()));
+        }
         if (navItemMapper.updateById(item) == 0) {
             throw new IllegalArgumentException("导航不存在: " + item.getId());
         }

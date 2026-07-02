@@ -23,6 +23,7 @@ class NavApiTest extends ApiTestBase {
     }
 
     private long addItem(String title, String url, String category, boolean enabled) throws Exception {
+        ensureCategory(category);
         String body = mvc.perform(post("/api/nav/add")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -31,6 +32,21 @@ class NavApiTest extends ApiTestBase {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).path("data").path("id").asLong();
+    }
+
+    private void ensureCategory(String category) throws Exception {
+        if ("默认".equals(category)) {
+            return;
+        }
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM nav_category WHERE name = ?", Integer.class, category);
+        if (count != null && count > 0) {
+            return;
+        }
+        mvc.perform(post("/api/nav/categories")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + category + "\",\"sort\":0}"))
+                .andExpect(status().isOk());
     }
 
     @Test

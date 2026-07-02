@@ -5,6 +5,7 @@
       <el-menu router :default-active="$route.path" class="menu">
         <el-menu-item index="/admin/dashboard">📊 数据大屏</el-menu-item>
         <el-menu-item index="/admin/nav">🧭 导航管理</el-menu-item>
+        <el-menu-item index="/admin/categories">🗂️ 分类设置</el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

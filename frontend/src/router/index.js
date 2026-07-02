@@ -13,7 +13,8 @@ const router = createRouter({
       children: [
         { path: '', redirect: '/admin/dashboard' },
         { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
-        { path: 'nav', component: () => import('../views/admin/NavManage.vue') }
+        { path: 'nav', component: () => import('../views/admin/NavManage.vue') },
+        { path: 'categories', component: () => import('../views/admin/CategoryManage.vue') }
       ]
     }
   ]

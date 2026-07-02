@@ -30,6 +30,8 @@ public abstract class ApiTestBase {
         jdbc.execute("DELETE FROM visit_log");
         jdbc.execute("DELETE FROM user_session");
         jdbc.execute("DELETE FROM nav_item");
+        jdbc.execute("DELETE FROM nav_category");
+        jdbc.execute("INSERT INTO nav_category (name, sort) VALUES ('默认', 0)");
     }
 
     protected String login() throws Exception {

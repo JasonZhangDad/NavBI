@@ -1,3 +1,13 @@
+CREATE TABLE IF NOT EXISTS nav_category (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(64) NOT NULL UNIQUE,
+  sort INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_nav_category_sort ON nav_category (sort, id);
+
 CREATE TABLE IF NOT EXISTS nav_item (
   id BIGSERIAL PRIMARY KEY,
   title VARCHAR(128) NOT NULL,
@@ -11,6 +21,19 @@ CREATE TABLE IF NOT EXISTS nav_item (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO nav_category (name, sort)
+SELECT '默认', 0
+WHERE NOT EXISTS (SELECT 1 FROM nav_category WHERE name = '默认');
+
+INSERT INTO nav_category (name, sort)
+SELECT ni.category, MIN(ni.sort)
+FROM nav_item ni
+LEFT JOIN nav_category c ON c.name = ni.category
+WHERE ni.category IS NOT NULL
+  AND ni.category <> ''
+  AND c.id IS NULL
+GROUP BY ni.category;
 
 CREATE TABLE IF NOT EXISTS visit_log (
   id BIGSERIAL PRIMARY KEY,

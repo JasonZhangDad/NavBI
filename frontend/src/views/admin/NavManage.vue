@@ -47,7 +47,14 @@
           <el-input v-model="form.url" placeholder="https://..." />
         </el-form-item>
         <el-form-item label="分类">
-          <el-input v-model="form.category" placeholder="默认" />
+          <el-select v-model="form.category" filterable placeholder="请选择分类" class="full">
+            <el-option
+              v-for="category in categories"
+              :key="category.id"
+              :label="category.name"
+              :value="category.name"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="图标">
           <el-input v-model="form.icon" placeholder="留空自动取网站 logo；可填图片 URL 覆盖，emoji 作加载失败兜底" />
@@ -74,6 +81,7 @@ import http from '../../api'
 import { iconSrc, fallbackEmoji } from '../../icon'
 
 const items = ref([])
+const categories = ref([])
 const iconFailed = reactive({})
 const loading = ref(false)
 const saving = ref(false)
@@ -84,8 +92,9 @@ const form = reactive({ ...emptyForm })
 async function load() {
   loading.value = true
   try {
-    const res = await http.get('/nav/all')
-    items.value = res.data || []
+    const [navRes, categoryRes] = await Promise.all([http.get('/nav/all'), http.get('/nav/categories')])
+    items.value = navRes.data || []
+    categories.value = categoryRes.data || []
   } finally {
     loading.value = false
   }
@@ -93,12 +102,15 @@ async function load() {
 
 function openDialog(row) {
   Object.assign(form, emptyForm, row || {})
+  if (!form.category && categories.value.length > 0) {
+    form.category = categories.value[0].name
+  }
   dialogVisible.value = true
 }
 
 async function save() {
-  if (!form.title || !form.url) {
-    ElMessage.warning('标题和网址必填')
+  if (!form.title || !form.url || !form.category) {
+    ElMessage.warning('标题、网址和分类必填')
     return
   }
   saving.value = true
@@ -145,5 +157,8 @@ onMounted(load)
   width: 24px;
   height: 24px;
   border-radius: 4px;
+}
+.full {
+  width: 100%;
 }
 </style>
