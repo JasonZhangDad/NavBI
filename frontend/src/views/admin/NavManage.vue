@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <el-table :data="displayItems" v-loading="loading" stripe empty-text="没有匹配的导航">
+    <el-table :data="pagedItems" v-loading="loading" stripe empty-text="没有匹配的导航">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column label="图标" width="70">
         <template #default="{ row }">
@@ -47,6 +47,17 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="filteredItems.length"
+        layout="total, sizes, prev, pager, next"
+        background
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑导航' : '新增导航'" width="480px">
       <el-form :model="form" label-width="70px">
@@ -85,7 +96,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '../../api'
 import { iconSrc, fallbackEmoji } from '../../icon'
@@ -93,6 +104,8 @@ import { iconSrc, fallbackEmoji } from '../../icon'
 const items = ref([])
 const categories = ref([])
 const categoryFilter = ref('')
+const page = ref(1)
+const pageSize = ref(20)
 const iconFailed = reactive({})
 const loading = ref(false)
 const saving = ref(false)
@@ -100,11 +113,27 @@ const dialogVisible = ref(false)
 const emptyForm = { id: null, title: '', url: '', category: '默认', icon: '', sort: 0, enabled: true }
 const form = reactive({ ...emptyForm })
 
-const displayItems = computed(() => {
+const filteredItems = computed(() => {
   if (!categoryFilter.value) {
     return items.value
   }
   return items.value.filter((item) => item.category === categoryFilter.value)
+})
+
+const pagedItems = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filteredItems.value.slice(start, start + pageSize.value)
+})
+
+watch(categoryFilter, () => {
+  page.value = 1
+})
+
+watch([filteredItems, pageSize], () => {
+  const maxPage = Math.max(1, Math.ceil(filteredItems.value.length / pageSize.value))
+  if (page.value > maxPage) {
+    page.value = maxPage
+  }
 })
 
 async function load() {
@@ -179,6 +208,11 @@ onMounted(load)
 }
 .category-filter {
   width: 180px;
+}
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 .row-icon {
   width: 24px;
