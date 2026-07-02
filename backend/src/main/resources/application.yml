@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: navbi
+  datasource:
+    url: ${NAVBI_DB_URL:jdbc:postgresql://postgres:5432/navbi}
+    username: ${NAVBI_DB_USER:navbi}
+    password: ${NAVBI_DB_PASSWORD:navbi}
+  sql:
+    init:
+      mode: always
+  data:
+    redis:
+      host: ${NAVBI_REDIS_HOST:redis}
+      port: ${NAVBI_REDIS_PORT:6379}
+      timeout: 2s
+      connect-timeout: 2s
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+navbi:
+  admin:
+    username: ${NAVBI_ADMIN_USERNAME:admin}
+    password: ${NAVBI_ADMIN_PASSWORD:admin123}
+  jwt:
+    # 生产必须通过 NAVBI_JWT_SECRET 覆盖，且长度 >= 32 字节
+    secret: ${NAVBI_JWT_SECRET:navbi-dev-secret-change-me-0123456789abcdef}
+    ttl-hours: 24
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.navbi: INFO

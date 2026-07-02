@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:navbitest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+  data:
+    redis:
+      # 指向未监听端口：测试验证 Redis 降级路径的确定性行为
+      host: localhost
+      port: 63790
+      timeout: 200ms
+      connect-timeout: 200ms
+
+navbi:
+  admin:
+    username: admin
+    password: admin123
+  jwt:
+    secret: navbi-test-secret-0123456789abcdef-XYZ
+    ttl-hours: 1

@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS nav_item (
+  id BIGSERIAL PRIMARY KEY,
+  title VARCHAR(128) NOT NULL,
+  url VARCHAR(512) NOT NULL,
+  category VARCHAR(64) NOT NULL DEFAULT '默认',
+  icon VARCHAR(512),
+  sort INT NOT NULL DEFAULT 0,
+  click_count BIGINT NOT NULL DEFAULT 0,
+  uv_count BIGINT NOT NULL DEFAULT 0,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS visit_log (
+  id BIGSERIAL PRIMARY KEY,
+  ip VARCHAR(64),
+  country VARCHAR(64),
+  province VARCHAR(64),
+  city VARCHAR(64),
+  device VARCHAR(32),
+  os VARCHAR(64),
+  browser VARCHAR(64),
+  url VARCHAR(512),
+  referer VARCHAR(512),
+  user_agent VARCHAR(1024),
+  session_id VARCHAR(64),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_visit_log_created_at ON visit_log (created_at);
+CREATE INDEX IF NOT EXISTS idx_visit_log_url ON visit_log (url);
+CREATE INDEX IF NOT EXISTS idx_visit_log_ip ON visit_log (ip);
+CREATE INDEX IF NOT EXISTS idx_visit_log_session ON visit_log (session_id);
+
+CREATE TABLE IF NOT EXISTS user_session (
+  id BIGSERIAL PRIMARY KEY,
+  session_id VARCHAR(64) NOT NULL UNIQUE,
+  ip VARCHAR(64),
+  start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  end_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  page_count INT NOT NULL DEFAULT 0
+);
