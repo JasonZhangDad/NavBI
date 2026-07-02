@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,8 +18,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 服务端代理抓取导航站点 logo：浏览器只请求本站，避免第三方图标源
- * 在部分网络环境（如大陆屏蔽 DDG）不可达的问题。结果内存缓存，导航变更时失效。
+ * 服务端代理抓取导航站点 logo：浏览器只请求本站，规避第三方图标源
+ * 在部分网络环境不可达的问题。手动配置的图标 URL 可用时优先；否则抓取
+ * 全部自动源，用魔数校验真伪（不信任 Content-Type），取字节数最大者
+ * 作为最高质量结果。结果内存缓存，导航变更时失效。
  */
 @Slf4j
 @Service
@@ -37,29 +40,37 @@ public class IconService {
             .build();
 
     public Optional<Icon> iconFor(NavItem item) {
-        return cache.computeIfAbsent(item.getId(), id -> fetchChain(item));
+        return cache.computeIfAbsent(item.getId(), id -> fetchBest(item));
     }
 
     public void evict(Long id) {
         cache.remove(id);
     }
 
-    private Optional<Icon> fetchChain(NavItem item) {
-        for (String url : candidates(item)) {
-            Optional<Icon> icon = fetch(url);
-            if (icon.isPresent()) {
-                return icon;
+    private Optional<Icon> fetchBest(NavItem item) {
+        if (item.getIcon() != null && item.getIcon().startsWith("http")) {
+            Optional<Icon> manual = fetch(item.getIcon());
+            if (manual.isPresent()) {
+                return manual;
             }
         }
-        log.info("导航 {} 所有图标源均失败", item.getId());
-        return Optional.empty();
+        List<Icon> valid = new ArrayList<>();
+        for (String url : autoCandidates(item)) {
+            fetch(url).ifPresent(valid::add);
+        }
+        Optional<Icon> best = pickBest(valid);
+        if (best.isEmpty()) {
+            log.info("导航 {} 所有图标源均失败", item.getId());
+        }
+        return best;
     }
 
-    List<String> candidates(NavItem item) {
+    static Optional<Icon> pickBest(List<Icon> icons) {
+        return icons.stream().max(Comparator.comparingInt(icon -> icon.bytes().length));
+    }
+
+    List<String> autoCandidates(NavItem item) {
         List<String> list = new ArrayList<>();
-        if (item.getIcon() != null && item.getIcon().startsWith("http")) {
-            list.add(item.getIcon());
-        }
         try {
             String host = URI.create(item.getUrl()).getHost();
             if (host != null) {
@@ -68,10 +79,11 @@ public class IconService {
                 if (!root.equals(host)) {
                     list.add("https://icons.duckduckgo.com/ip3/" + root + ".ico");
                 }
+                list.add("https://www.google.com/s2/favicons?domain=" + host + "&sz=64");
                 list.add("https://" + host + "/favicon.ico");
             }
         } catch (IllegalArgumentException ignored) {
-            // URL 非法：仅尝试手动图标
+            // URL 非法：无自动源
         }
         return list;
     }
@@ -84,9 +96,9 @@ public class IconService {
                     .build();
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             byte[] body = response.body();
-            String contentType = response.headers().firstValue("Content-Type").orElse("");
-            if (response.statusCode() == 200 && body.length > 0 && looksLikeImage(contentType, body)) {
-                return Optional.of(new Icon(body, contentType.isBlank() ? "image/x-icon" : contentType));
+            if (response.statusCode() == 200 && looksLikeImage(body)) {
+                String contentType = response.headers().firstValue("Content-Type").orElse("");
+                return Optional.of(new Icon(body, contentType.startsWith("image/") ? contentType : "image/x-icon"));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -96,14 +108,12 @@ public class IconService {
         return Optional.empty();
     }
 
-    static boolean looksLikeImage(String contentType, byte[] body) {
-        if (contentType != null && contentType.startsWith("image/")) {
-            return true;
-        }
+    /** 仅认魔数：部分源会用 image/* 的 Content-Type 返回非图片内容。 */
+    static boolean looksLikeImage(byte[] body) {
         if (body.length < 4) {
             return false;
         }
-        // PNG / GIF / JPEG / ICO / RIFF(webp) / SVG 魔数
+        // PNG / GIF / JPEG / ICO / RIFF(webp) / SVG
         if ((body[0] & 0xFF) == 0x89 && body[1] == 'P') return true;
         if (body[0] == 'G' && body[1] == 'I' && body[2] == 'F') return true;
         if ((body[0] & 0xFF) == 0xFF && (body[1] & 0xFF) == 0xD8) return true;

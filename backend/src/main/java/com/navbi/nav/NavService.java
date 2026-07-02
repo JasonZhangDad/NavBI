@@ -32,9 +32,9 @@ public class NavService {
                 .orderByAsc(NavItem::getId);
         if (keyword != null && !keyword.isBlank()) {
             String kw = keyword.trim();
+            // 分类不参与搜索：分类筛选是前台独立的过滤器
             wrapper.and(w -> w.like(NavItem::getTitle, kw)
-                    .or().like(NavItem::getUrl, kw)
-                    .or().like(NavItem::getCategory, kw));
+                    .or().like(NavItem::getUrl, kw));
         }
         Map<String, List<NavItem>> grouped = new LinkedHashMap<>();
         for (NavItem item : navItemMapper.selectList(wrapper)) {

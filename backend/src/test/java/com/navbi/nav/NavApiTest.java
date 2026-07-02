@@ -65,6 +65,15 @@ class NavApiTest extends ApiTestBase {
     }
 
     @Test
+    void keywordDoesNotMatchCategory() throws Exception {
+        addItem("少数派", "https://sspai.com", "资讯", true);
+
+        mvc.perform(get("/api/nav/list").param("keyword", "资讯"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
     void clickTwiceIncrementsPvByTwo() throws Exception {
         long id = addItem("GitHub", "https://github.com", "开发", true);
 

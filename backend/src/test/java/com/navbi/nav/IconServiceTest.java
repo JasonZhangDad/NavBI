@@ -12,24 +12,26 @@ class IconServiceTest {
     private final IconService iconService = new IconService();
 
     @Test
-    void candidatesChainOrder() {
+    void autoCandidatesChainOrder() {
         NavItem item = new NavItem();
         item.setId(1L);
         item.setUrl("https://chat.deepseek.com/x");
-        List<String> candidates = iconService.candidates(item);
+        List<String> candidates = iconService.autoCandidates(item);
         assertThat(candidates).containsExactly(
                 "https://icons.duckduckgo.com/ip3/chat.deepseek.com.ico",
                 "https://icons.duckduckgo.com/ip3/deepseek.com.ico",
+                "https://www.google.com/s2/favicons?domain=chat.deepseek.com&sz=64",
                 "https://chat.deepseek.com/favicon.ico");
     }
 
     @Test
-    void manualHttpIconComesFirst() {
+    void manualIconIsNotInAutoCandidates() {
         NavItem item = new NavItem();
         item.setId(1L);
         item.setUrl("https://github.com");
         item.setIcon("https://cdn.example.com/gh.png");
-        assertThat(iconService.candidates(item).get(0)).isEqualTo("https://cdn.example.com/gh.png");
+        assertThat(iconService.autoCandidates(item))
+                .doesNotContain("https://cdn.example.com/gh.png");
     }
 
     @Test
@@ -40,13 +42,25 @@ class IconServiceTest {
     }
 
     @Test
-    void magicBytesDetection() {
-        assertThat(IconService.looksLikeImage("image/png", new byte[]{1, 2, 3, 4})).isTrue();
-        assertThat(IconService.looksLikeImage("", new byte[]{(byte) 0x89, 'P', 'N', 'G'})).isTrue();
-        assertThat(IconService.looksLikeImage("", new byte[]{0, 0, 1, 0, 1})).isTrue();
-        assertThat(IconService.looksLikeImage("text/html",
+    void magicBytesAreRequiredEvenWithImageContentType() {
+        // 回归：DDG 曾对 open.spotify.com 返回 Content-Type=image/png 的文本垃圾
+        assertThat(IconService.looksLikeImage("version 1.2".getBytes(StandardCharsets.UTF_8))).isFalse();
+        assertThat(IconService.looksLikeImage(new byte[]{1, 2, 3, 4})).isFalse();
+        assertThat(IconService.looksLikeImage(
                 "<html><body>404</body></html>".getBytes(StandardCharsets.UTF_8))).isFalse();
-        assertThat(IconService.looksLikeImage("", "<svg xmlns=\"x\"/>".getBytes(StandardCharsets.UTF_8))).isTrue();
-        assertThat(IconService.looksLikeImage("", new byte[0])).isFalse();
+        assertThat(IconService.looksLikeImage(new byte[0])).isFalse();
+
+        assertThat(IconService.looksLikeImage(new byte[]{(byte) 0x89, 'P', 'N', 'G'})).isTrue();
+        assertThat(IconService.looksLikeImage(new byte[]{0, 0, 1, 0, 1})).isTrue();
+        assertThat(IconService.looksLikeImage(new byte[]{(byte) 0xFF, (byte) 0xD8, 0, 0})).isTrue();
+        assertThat(IconService.looksLikeImage("<svg xmlns=\"x\"/>".getBytes(StandardCharsets.UTF_8))).isTrue();
+    }
+
+    @Test
+    void picksLargestValidIcon() {
+        IconService.Icon small = new IconService.Icon(new byte[100], "image/png");
+        IconService.Icon large = new IconService.Icon(new byte[5000], "image/x-icon");
+        assertThat(IconService.pickBest(List.of(small, large))).contains(large);
+        assertThat(IconService.pickBest(List.of())).isEmpty();
     }
 }

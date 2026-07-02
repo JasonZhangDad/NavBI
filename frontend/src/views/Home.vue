@@ -7,15 +7,25 @@
         v-model="keyword"
         class="search"
         size="large"
-        placeholder="搜索导航（标题 / 网址 / 分类）"
+        placeholder="搜索导航（标题 / 网址）"
         clearable
-        @input="onSearch"
       />
+      <nav class="cats">
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          class="cat"
+          :class="{ active: cat === activeCategory }"
+          @click="activeCategory = cat"
+        >
+          {{ cat }}
+        </button>
+      </nav>
     </header>
 
     <main class="content">
-      <el-empty v-if="!loading && groups.length === 0" description="暂无导航，去后台添加吧" />
-      <section v-for="group in groups" :key="group.category" class="group">
+      <el-empty v-if="!loading && displayGroups.length === 0" description="没有匹配的导航" />
+      <section v-for="group in displayGroups" :key="group.category" class="group">
         <h2>{{ group.category }}</h2>
         <div class="grid">
           <a
@@ -53,29 +63,42 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
 
 const groups = ref([])
 const keyword = ref('')
+const activeCategory = ref('全部')
 const loading = ref(true)
-let searchTimer = null
+
+/** 分类过滤条：由数据动态生成，后台增删分类自动生效 */
+const categories = computed(() => ['全部', ...groups.value.map((g) => g.category)])
+
+const displayGroups = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  return groups.value
+    .filter((g) => activeCategory.value === '全部' || g.category === activeCategory.value)
+    .map((g) => ({
+      ...g,
+      items: kw
+        ? g.items.filter(
+            (i) => i.title.toLowerCase().includes(kw) || i.url.toLowerCase().includes(kw)
+          )
+        : g.items
+    }))
+    .filter((g) => g.items.length > 0)
+})
 
 async function load() {
   loading.value = true
   try {
-    const res = await http.get('/nav/list', { params: { keyword: keyword.value || undefined } })
+    const res = await http.get('/nav/list')
     groups.value = res.data || []
   } finally {
     loading.value = false
   }
-}
-
-function onSearch() {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(load, 300)
 }
 
 function onClick(item) {
@@ -123,6 +146,32 @@ onMounted(() => {
 }
 .search {
   max-width: 520px;
+}
+.cats {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.cat {
+  border: 1px solid rgba(11, 11, 11, 0.12);
+  background: #fcfcfb;
+  color: #52514e;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cat:hover {
+  border-color: #2a78d6;
+  color: #2a78d6;
+}
+.cat.active {
+  background: #2a78d6;
+  border-color: #2a78d6;
+  color: #fff;
 }
 .content {
   flex: 1;
