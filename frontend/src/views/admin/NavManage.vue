@@ -9,7 +9,13 @@
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column label="图标" width="70">
         <template #default="{ row }">
-          <img v-if="/^https?:/.test(row.icon || '')" :src="row.icon" class="row-icon" alt="" />
+          <img
+            v-if="!iconFailed[row.id]"
+            :src="iconSrc(row)"
+            class="row-icon"
+            alt=""
+            @error="iconFailed[row.id] = true"
+          />
           <span v-else>{{ row.icon || '🔗' }}</span>
         </template>
       </el-table-column>
@@ -44,7 +50,7 @@
           <el-input v-model="form.category" placeholder="默认" />
         </el-form-item>
         <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="emoji 或图片 URL" />
+          <el-input v-model="form.icon" placeholder="留空自动取网站 logo；可填图片 URL 覆盖，emoji 作加载失败兜底" />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" />
@@ -67,6 +73,19 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '../../api'
 
 const items = ref([])
+const iconFailed = reactive({})
+
+/** 与首页一致：手动图片 URL > 站点 favicon > emoji 兜底 */
+function iconSrc(row) {
+  if (row.icon && /^https?:\/\//.test(row.icon)) {
+    return row.icon
+  }
+  try {
+    return `https://icons.duckduckgo.com/ip3/${new URL(row.url).host}.ico`
+  } catch {
+    return ''
+  }
+}
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)

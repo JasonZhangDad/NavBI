@@ -28,8 +28,14 @@
             @click="onClick(item)"
           >
             <span class="icon">
-              <img v-if="isImageIcon(item.icon)" :src="item.icon" alt="" />
-              <template v-else>{{ item.icon || '🔗' }}</template>
+              <img
+                v-if="!iconFailed[item.id]"
+                :src="iconSrc(item)"
+                alt=""
+                loading="lazy"
+                @error="iconFailed[item.id] = true"
+              />
+              <template v-else>{{ isImageIcon(item.icon) ? '🔗' : item.icon || '🔗' }}</template>
             </span>
             <span class="meta">
               <span class="title">{{ item.title }}</span>
@@ -47,7 +53,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 
@@ -77,6 +83,20 @@ function onClick(item) {
 
 function isImageIcon(icon) {
   return icon && /^https?:\/\//.test(icon)
+}
+
+const iconFailed = reactive({})
+
+/** 图标优先级：手动图片 URL > 站点 favicon（按域名自动获取）> emoji 兜底 */
+function iconSrc(item) {
+  if (isImageIcon(item.icon)) {
+    return item.icon
+  }
+  try {
+    return `https://icons.duckduckgo.com/ip3/${new URL(item.url).host}.ico`
+  } catch {
+    return ''
+  }
 }
 
 function host(url) {
