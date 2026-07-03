@@ -83,6 +83,9 @@ public class AuthController {
         }
         AppUser user = userMapper.selectOne(new LambdaQueryWrapper<AppUser>().eq(AppUser::getEmail, username));
         if (user != null && passwordEncoder.matches(password, user.getPasswordHash())) {
+            if (Boolean.FALSE.equals(user.getEnabled())) {
+                throw new IllegalArgumentException("账号已被封禁，请联系管理员");
+            }
             return user.getRole();
         }
         return null;

@@ -18,6 +18,7 @@ const router = createRouter({
         { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
         { path: 'nav', component: () => import('../views/admin/NavManage.vue') },
         { path: 'categories', component: () => import('../views/admin/CategoryManage.vue') },
+        { path: 'users', component: () => import('../views/admin/UserManage.vue') },
         { path: 'api-logs', component: () => import('../views/admin/ApiLogs.vue') }
       ]
     }

@@ -6,6 +6,7 @@
         <el-menu-item index="/admin/dashboard">📊 数据大屏</el-menu-item>
         <el-menu-item index="/admin/nav">🧭 导航管理</el-menu-item>
         <el-menu-item index="/admin/categories">🗂️ 分类设置</el-menu-item>
+        <el-menu-item index="/admin/users">👥 用户管理</el-menu-item>
         <el-menu-item index="/admin/api-logs">📜 接口日志</el-menu-item>
       </el-menu>
     </el-aside>

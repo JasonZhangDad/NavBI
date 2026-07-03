@@ -16,5 +16,7 @@ public class AppUser {
     private String email;
     private String passwordHash;
     private String role;
+    private Boolean enabled;
+    private Boolean proxyEnabled;
     private LocalDateTime createdAt;
 }
