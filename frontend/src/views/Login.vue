@@ -1,21 +1,28 @@
 <template>
-  <div class="login-page">
-    <el-card class="login-card">
-      <h2>登录 NavBI Pro</h2>
-      <el-form :model="form" label-position="top" @submit.prevent="submit">
-        <el-form-item label="用户名 / 邮箱">
-          <el-input v-model="form.username" autocomplete="username" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" show-password autocomplete="current-password" />
-        </el-form-item>
-        <el-button type="primary" native-type="submit" :loading="loading" class="submit">登录</el-button>
-      </el-form>
-      <p class="hint">
-        没有账号？<router-link to="/register">邮箱注册</router-link>
-      </p>
-    </el-card>
-  </div>
+  <AuthShell title="欢迎回来" subtitle="登录后可使用个人功能与管理后台">
+    <el-form :model="form" label-position="top" size="large" @submit.prevent="submit">
+      <el-form-item label="用户名 / 邮箱">
+        <el-input v-model="form.username" autocomplete="username" placeholder="admin 或 you@example.com" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <div class="pwd-field">
+          <el-input
+            v-model="form.password"
+            type="password"
+            show-password
+            autocomplete="current-password"
+            placeholder="输入密码"
+          />
+          <router-link class="forgot" to="/reset-password">忘记密码？</router-link>
+        </div>
+      </el-form-item>
+      <el-button type="primary" native-type="submit" :loading="loading" class="submit-btn">登 录</el-button>
+    </el-form>
+
+    <template #footer>
+      没有账号？<router-link to="/register">邮箱注册</router-link>
+    </template>
+  </AuthShell>
 </template>
 
 <script setup>
@@ -24,6 +31,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http from '../api'
 import { useAuthStore } from '../stores/auth'
+import AuthShell from '../components/AuthShell.vue'
 
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
@@ -38,7 +46,7 @@ async function submit() {
   loading.value = true
   try {
     const res = await http.post('/auth/login', form)
-    auth.setAuth(res.data.token, res.data.role)
+    auth.setAuth(res.data.token, res.data.role, form.username)
     router.push(res.data.role === 'ADMIN' ? '/admin/dashboard' : '/me')
   } catch (e) {
     if (e.response?.status === 401) {
@@ -53,31 +61,19 @@ async function submit() {
 </script>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #eef4fc 0%, #f9f9f7 100%);
-}
-.login-card {
-  width: 360px;
-}
-.login-card h2 {
-  margin: 0 0 20px;
-  text-align: center;
-}
-.submit {
+.pwd-field {
   width: 100%;
-  margin-top: 8px;
 }
-.hint {
-  margin: 16px 0 0;
-  text-align: center;
-  font-size: 13px;
+.forgot {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
   color: #898781;
+  text-decoration: none;
+  text-align: right;
+  width: 100%;
 }
-.hint a {
+.forgot:hover {
   color: #2a78d6;
 }
 </style>

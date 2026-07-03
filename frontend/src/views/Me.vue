@@ -1,22 +1,25 @@
 <template>
-  <div class="me-page">
-    <el-card class="me-card">
-      <h2>欢迎回来</h2>
-      <p>你已登录 NavBI Pro。个人功能正在建设中，敬请期待。</p>
-      <div class="actions">
-        <el-button @click="$router.push('/')">回到导航首页</el-button>
-        <el-button type="danger" plain @click="logout">退出登录</el-button>
-      </div>
-    </el-card>
-  </div>
+  <AuthShell title="个人中心" :subtitle="auth.username ? `已登录：${auth.username}` : '你已登录 NavBI Pro'">
+    <p class="tip">个人功能正在建设中，敬请期待。</p>
+    <div class="actions">
+      <el-button size="large" @click="$router.push('/')">回到导航首页</el-button>
+      <el-button size="large" @click="changePassword">修改密码</el-button>
+      <el-button size="large" type="danger" plain @click="logout">退出登录</el-button>
+    </div>
+  </AuthShell>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import AuthShell from '../components/AuthShell.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+function changePassword() {
+  router.push({ path: '/reset-password', query: auth.username ? { email: auth.username } : {} })
+}
 
 function logout() {
   auth.logout()
@@ -25,27 +28,19 @@ function logout() {
 </script>
 
 <style scoped>
-.me-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #eef4fc 0%, #f9f9f7 100%);
-}
-.me-card {
-  width: 420px;
-  text-align: center;
-}
-.me-card h2 {
-  margin: 0 0 12px;
-}
-.me-card p {
-  color: #52514e;
+.tip {
   margin: 0 0 20px;
+  color: #52514e;
+  font-size: 14px;
 }
 .actions {
   display: flex;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
+}
+.actions .el-button {
+  width: 100%;
+  margin: 0;
+  border-radius: 10px;
 }
 </style>

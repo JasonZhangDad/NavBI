@@ -21,6 +21,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/register/code",
+                                "/api/auth/password/code", "/api/auth/password/reset",
                                 "/api/track", "/api/nav/list", "/api/nav/click/**", "/api/nav/icon/**")
                         .permitAll()
                         // 普通注册用户暂无可见后端资源：管理与 BI 接口全部仅限管理员

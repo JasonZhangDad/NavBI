@@ -100,4 +100,19 @@ public class AuthController {
                 ClientIpUtil.resolve(http));
         return ApiResponse.ok();
     }
+
+    @PostMapping("/password/code")
+    public ApiResponse<Void> sendPasswordCode(@Validated @RequestBody CodeRequest request,
+                                              HttpServletRequest http) {
+        registerService.sendPasswordCode(request.email(), ClientIpUtil.resolve(http));
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/password/reset")
+    public ApiResponse<Void> resetPassword(@Validated @RequestBody RegisterRequest request,
+                                           HttpServletRequest http) {
+        registerService.resetPassword(request.email(), request.code(), request.password(),
+                ClientIpUtil.resolve(http));
+        return ApiResponse.ok();
+    }
 }
