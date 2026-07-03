@@ -1,6 +1,20 @@
 <template>
   <div class="portal">
     <header class="hero">
+      <!-- 右上角用户区 -->
+      <div class="topbar">
+        <template v-if="auth.token">
+          <router-link class="tb-link" :to="auth.role === 'ADMIN' ? '/admin/dashboard' : '/me'">
+            <span class="tb-avatar">{{ (auth.username || auth.role || 'U')[0].toUpperCase() }}</span>
+            <span class="tb-name">{{ auth.username || (auth.role === 'ADMIN' ? '管理员' : '我的') }}</span>
+          </router-link>
+        </template>
+        <template v-else>
+          <router-link class="tb-btn tb-ghost" to="/login">登录</router-link>
+          <router-link class="tb-btn tb-primary" to="/register">注册</router-link>
+        </template>
+      </div>
+
       <h1>NavBI <span>Pro</span></h1>
       <p class="slogan">统一导航入口 · 访问数据大脑</p>
       <el-input
@@ -75,6 +89,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
 
 const groups = ref([])
 const keyword = ref('')
@@ -136,6 +153,7 @@ onMounted(() => {
   flex-direction: column;
 }
 .hero {
+  position: relative;
   padding: 64px 24px 40px;
   text-align: center;
   background: linear-gradient(180deg, #eef4fc 0%, #f9f9f7 100%);
@@ -268,5 +286,85 @@ onMounted(() => {
 }
 .footer-links a:hover {
   color: #2a78d6;
+}
+
+/* ── 右上角 Topbar ── */
+.topbar {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tb-ghost {
+  border: 1px solid rgba(42, 120, 214, 0.4);
+  color: #2a78d6;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px);
+}
+.tb-ghost:hover {
+  background: rgba(42, 120, 214, 0.08);
+  border-color: #2a78d6;
+}
+.tb-primary {
+  background: linear-gradient(135deg, #2a78d6 0%, #1a5cb8 100%);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(42, 120, 214, 0.3);
+}
+.tb-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(42, 120, 214, 0.4);
+}
+.tb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: #2a78d6;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(42, 120, 214, 0.2);
+  transition: all 0.15s;
+}
+.tb-link:hover {
+  background: rgba(42, 120, 214, 0.08);
+  border-color: #2a78d6;
+}
+.tb-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2a78d6, #1a5cb8);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tb-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
