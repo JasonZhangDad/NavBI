@@ -26,15 +26,18 @@ public class ProxyController {
     private final NavItemMapper navItemMapper;
     private final AppUserMapper appUserMapper;
     private final String adminUsername;
+    private final String proxyGateway;
 
     public ProxyController(StringRedisTemplate redisTemplate,
                            NavItemMapper navItemMapper,
                            AppUserMapper appUserMapper,
-                           @Value("${navbi.admin.username}") String adminUsername) {
+                           @Value("${navbi.admin.username}") String adminUsername,
+                           @Value("${navbi.proxy.gateway:}") String proxyGateway) {
         this.redisTemplate = redisTemplate;
         this.navItemMapper = navItemMapper;
         this.appUserMapper = appUserMapper;
         this.adminUsername = adminUsername;
+        this.proxyGateway = proxyGateway;
     }
 
     @PostMapping("/api/nav/ticket/{id}")
@@ -85,8 +88,13 @@ public class ProxyController {
         // 使用后立即删除 ticket，确保一次性
         redisTemplate.delete(key);
 
+        String finalUrl = url;
+        if (proxyGateway != null && !proxyGateway.isBlank()) {
+            finalUrl = proxyGateway + url;
+        }
+
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(url))
+                .location(URI.create(finalUrl))
                 .build();
     }
 }
