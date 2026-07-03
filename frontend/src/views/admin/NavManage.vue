@@ -40,6 +40,13 @@
           <el-switch :model-value="row.enabled" @change="(v) => toggle(row, v)" />
         </template>
       </el-table-column>
+      <el-table-column label="代理" width="80">
+        <template #default="{ row }">
+          <el-tag :type="row.proxyEnabled ? 'warning' : 'info'" size="small">
+            {{ row.proxyEnabled ? '开' : '关' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="openDialog(row)">编辑</el-button>
@@ -86,6 +93,10 @@
         <el-form-item label="启用">
           <el-switch v-model="form.enabled" />
         </el-form-item>
+        <el-form-item label="代理开启">
+          <el-switch v-model="form.proxyEnabled" />
+          <span class="form-hint">开启后拥有代理权限的用户可通过此导航使用代理访问</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -110,7 +121,7 @@ const iconFailed = reactive({})
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
-const emptyForm = { id: null, title: '', url: '', category: '默认', icon: '', sort: 0, enabled: true }
+const emptyForm = { id: null, title: '', url: '', category: '默认', icon: '', sort: 0, enabled: true, proxyEnabled: false }
 const form = reactive({ ...emptyForm })
 
 const filteredItems = computed(() => {
@@ -221,5 +232,10 @@ onMounted(load)
 }
 .full {
   width: 100%;
+}
+.form-hint {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #909399;
 }
 </style>

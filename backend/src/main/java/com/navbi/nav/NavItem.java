@@ -21,6 +21,7 @@ public class NavItem {
     private Long clickCount;
     private Long uvCount;
     private Boolean enabled;
+    private Boolean proxyEnabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
