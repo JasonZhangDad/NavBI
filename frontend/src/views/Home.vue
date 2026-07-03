@@ -49,7 +49,7 @@
             :href="item.url"
             target="_blank"
             rel="noopener"
-            @click="onClick(item)"
+            @click="(e) => handleItemClick(e, item)"
           >
             <span class="icon">
               <img
@@ -86,6 +86,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
@@ -128,6 +129,25 @@ async function load() {
 
 function onClick(item) {
   http.post(`/nav/click/${item.id}`, null, { headers: { 'X-Session-Id': getSessionId() } }).catch(() => {})
+}
+
+function handleItemClick(e, item) {
+  onClick(item) // track click
+
+  if (auth.token && item.proxyEnabled) {
+    e.preventDefault()
+    
+    // 打开一个空窗口，避免拦截，然后再赋予地址
+    const newTab = window.open('about:blank', '_blank')
+    http.post(`/nav/ticket/${item.id}`)
+      .then(res => {
+        newTab.location.href = `/go/${res.data}`
+      })
+      .catch(err => {
+        ElMessage.warning(err.response?.data?.message || '获取代理失败，将直接访问')
+        newTab.location.href = item.url
+      })
+  }
 }
 
 const iconFailed = reactive({})
