@@ -1,9 +1,9 @@
 <template>
   <div class="login-page">
     <el-card class="login-card">
-      <h2>NavBI Pro 管理后台</h2>
+      <h2>登录 NavBI Pro</h2>
       <el-form :model="form" label-position="top" @submit.prevent="submit">
-        <el-form-item label="用户名">
+        <el-form-item label="用户名 / 邮箱">
           <el-input v-model="form.username" autocomplete="username" />
         </el-form-item>
         <el-form-item label="密码">
@@ -11,6 +11,9 @@
         </el-form-item>
         <el-button type="primary" native-type="submit" :loading="loading" class="submit">登录</el-button>
       </el-form>
+      <p class="hint">
+        没有账号？<router-link to="/register">邮箱注册</router-link>
+      </p>
     </el-card>
   </div>
 </template>
@@ -35,11 +38,13 @@ async function submit() {
   loading.value = true
   try {
     const res = await http.post('/auth/login', form)
-    auth.setToken(res.data.token)
-    router.push('/admin/dashboard')
+    auth.setAuth(res.data.token, res.data.role)
+    router.push(res.data.role === 'ADMIN' ? '/admin/dashboard' : '/me')
   } catch (e) {
     if (e.response?.status === 401) {
       ElMessage.error('用户名或密码错误')
+    } else if (e.response?.status === 429) {
+      ElMessage.error(e.response.data?.message || '尝试过于频繁，请稍后再试')
     }
   } finally {
     loading.value = false
@@ -65,5 +70,14 @@ async function submit() {
 .submit {
   width: 100%;
   margin-top: 8px;
+}
+.hint {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #898781;
+}
+.hint a {
+  color: #2a78d6;
 }
 </style>

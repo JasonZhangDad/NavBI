@@ -1,0 +1,86 @@
+package com.navbi.auth;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+@Slf4j
+@Service
+public class RegisterService {
+
+    private static final Duration CODE_TTL = Duration.ofMinutes(10);
+
+    private final AppUserMapper userMapper;
+    private final EmailCodeMapper codeMapper;
+    private final MailSender mailSender;
+    private final RateLimiter rateLimiter;
+    private final PasswordEncoder passwordEncoder;
+    private final SecureRandom random = new SecureRandom();
+
+    public RegisterService(AppUserMapper userMapper, EmailCodeMapper codeMapper, MailSender mailSender,
+                           RateLimiter rateLimiter, PasswordEncoder passwordEncoder) {
+        this.userMapper = userMapper;
+        this.codeMapper = codeMapper;
+        this.mailSender = mailSender;
+        this.rateLimiter = rateLimiter;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public void sendCode(String email, String ip) {
+        if (!rateLimiter.tryAcquire("code-ip-min:" + ip, 1, Duration.ofMinutes(1))
+                || !rateLimiter.tryAcquire("code-ip-day:" + ip, 10, Duration.ofDays(1))
+                || !rateLimiter.tryAcquire("code-email-min:" + email, 1, Duration.ofMinutes(1))) {
+            throw new RateLimitExceededException("验证码请求过于频繁，请稍后再试");
+        }
+        if (emailRegistered(email)) {
+            throw new IllegalArgumentException("邮箱已注册");
+        }
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        EmailCode record = new EmailCode();
+        record.setEmail(email);
+        record.setCode(code);
+        record.setUsed(false);
+        record.setExpiresAt(LocalDateTime.now().plus(CODE_TTL));
+        record.setCreatedAt(LocalDateTime.now());
+        codeMapper.insert(record);
+        mailSender.send(email, "NavBI 注册验证码",
+                "您的验证码是 " + code + "，" + CODE_TTL.toMinutes() + " 分钟内有效。如非本人操作请忽略。");
+    }
+
+    public void register(String email, String code, String password, String ip) {
+        if (!rateLimiter.tryAcquire("register-ip:" + ip, 5, Duration.ofHours(1))) {
+            throw new RateLimitExceededException("注册请求过于频繁，请稍后再试");
+        }
+        if (emailRegistered(email)) {
+            throw new IllegalArgumentException("邮箱已注册");
+        }
+        EmailCode latest = codeMapper.selectOne(new LambdaQueryWrapper<EmailCode>()
+                .eq(EmailCode::getEmail, email)
+                .eq(EmailCode::getUsed, false)
+                .gt(EmailCode::getExpiresAt, LocalDateTime.now())
+                .orderByDesc(EmailCode::getId)
+                .last("LIMIT 1"));
+        if (latest == null || !latest.getCode().equals(code)) {
+            throw new IllegalArgumentException("验证码错误或已过期");
+        }
+        latest.setUsed(true);
+        codeMapper.updateById(latest);
+
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setRole("USER");
+        user.setCreatedAt(LocalDateTime.now());
+        userMapper.insert(user);
+        log.info("新用户注册: {}", email);
+    }
+
+    private boolean emailRegistered(String email) {
+        return userMapper.selectCount(new LambdaQueryWrapper<AppUser>().eq(AppUser::getEmail, email)) > 0;
+    }
+}

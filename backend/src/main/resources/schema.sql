@@ -56,6 +56,39 @@ CREATE INDEX IF NOT EXISTS idx_visit_log_url ON visit_log (url);
 CREATE INDEX IF NOT EXISTS idx_visit_log_ip ON visit_log (ip);
 CREATE INDEX IF NOT EXISTS idx_visit_log_session ON visit_log (session_id);
 
+CREATE TABLE IF NOT EXISTS app_user (
+  id BIGSERIAL PRIMARY KEY,
+  email VARCHAR(128) NOT NULL UNIQUE,
+  password_hash VARCHAR(100) NOT NULL,
+  role VARCHAR(16) NOT NULL DEFAULT 'USER',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS email_code (
+  id BIGSERIAL PRIMARY KEY,
+  email VARCHAR(128) NOT NULL,
+  code VARCHAR(8) NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT FALSE,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_code_email ON email_code (email, id);
+
+CREATE TABLE IF NOT EXISTS api_log (
+  id BIGSERIAL PRIMARY KEY,
+  method VARCHAR(8),
+  path VARCHAR(256),
+  ip VARCHAR(64),
+  username VARCHAR(128),
+  status INT,
+  cost_ms INT,
+  user_agent VARCHAR(512),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_log_created_at ON api_log (created_at);
+
 CREATE TABLE IF NOT EXISTS user_session (
   id BIGSERIAL PRIMARY KEY,
   session_id VARCHAR(64) NOT NULL UNIQUE,

@@ -55,6 +55,18 @@
         </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>
+        NavBI Pro 精选收录 AI 工具（ChatGPT、Claude、Gemini、Copilot）、开发资源（GitHub、Stack
+        Overflow）、设计素材、影音娱乐与科技资讯等常用网站，支持关键词搜索和分类过滤，帮你一站直达目标站点。
+      </p>
+      <p class="footer-links">
+        <router-link to="/login">登录</router-link>
+        <span aria-hidden="true">·</span>
+        <router-link to="/register">注册</router-link>
+      </p>
+    </footer>
   </div>
 </template>
 
@@ -232,5 +244,29 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.site-footer {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px;
+  border-top: 1px solid rgba(11, 11, 11, 0.08);
+  color: #898781;
+  font-size: 13px;
+  text-align: center;
+}
+.site-footer p {
+  margin: 0 0 8px;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.footer-links a {
+  color: #898781;
+  text-decoration: none;
+}
+.footer-links a:hover {
+  color: #2a78d6;
 }
 </style>

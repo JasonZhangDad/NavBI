@@ -19,6 +19,15 @@ class AuthApiTest extends ApiTestBase {
     }
 
     @Test
+    void adminLoginReturnsAdminRole() throws Exception {
+        mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("ADMIN"));
+    }
+
+    @Test
     void loginWithWrongPasswordReturns401() throws Exception {
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

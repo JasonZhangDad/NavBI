@@ -2,6 +2,7 @@ package com.navbi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.navbi.auth.RateLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,6 +25,8 @@ public abstract class ApiTestBase {
     protected ObjectMapper objectMapper;
     @Autowired
     protected JdbcTemplate jdbc;
+    @Autowired
+    protected RateLimiter rateLimiter;
 
     @BeforeEach
     void cleanDatabase() {
@@ -31,7 +34,11 @@ public abstract class ApiTestBase {
         jdbc.execute("DELETE FROM user_session");
         jdbc.execute("DELETE FROM nav_item");
         jdbc.execute("DELETE FROM nav_category");
+        jdbc.execute("DELETE FROM app_user");
+        jdbc.execute("DELETE FROM email_code");
+        jdbc.execute("DELETE FROM api_log");
         jdbc.execute("INSERT INTO nav_category (name, sort) VALUES ('默认', 0)");
+        rateLimiter.clear();
     }
 
     protected String login() throws Exception {

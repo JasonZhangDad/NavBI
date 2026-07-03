@@ -1,5 +1,6 @@
 package com.navbi.bi;
 
+import com.navbi.apilog.ApiLogService;
 import com.navbi.common.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +14,17 @@ import java.util.List;
 public class BiController {
 
     private final BiService biService;
+    private final ApiLogService apiLogService;
 
-    public BiController(BiService biService) {
+    public BiController(BiService biService, ApiLogService apiLogService) {
         this.biService = biService;
+        this.apiLogService = apiLogService;
+    }
+
+    @GetMapping("/api-logs")
+    public ApiResponse<ApiLogService.Page> apiLogs(@RequestParam(defaultValue = "1") int page,
+                                                   @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.ok(apiLogService.page(page, size));
     }
 
     @GetMapping("/summary")

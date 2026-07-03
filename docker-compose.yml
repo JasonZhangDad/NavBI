@@ -26,6 +26,8 @@ services:
       NAVBI_ADMIN_USERNAME: ${NAVBI_ADMIN_USERNAME:-admin}
       NAVBI_ADMIN_PASSWORD: ${NAVBI_ADMIN_PASSWORD:?请在 .env 中设置管理员密码}
       NAVBI_JWT_SECRET: ${NAVBI_JWT_SECRET:?请在 .env 中设置 JWT 密钥(>=32字节)}
+      NAVBI_MAIL_API_URL: ${NAVBI_MAIL_API_URL:-}
+      NAVBI_MAIL_API_TOKEN: ${NAVBI_MAIL_API_TOKEN:-}
     depends_on:
       - postgres
       - redis

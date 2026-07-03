@@ -20,16 +20,23 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/track", "/api/nav/list", "/api/nav/click/**",
-                                "/api/nav/icon/**")
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/register/code",
+                                "/api/track", "/api/nav/list", "/api/nav/click/**", "/api/nav/icon/**")
                         .permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        // 普通注册用户暂无可见后端资源：管理与 BI 接口全部仅限管理员
+                        .requestMatchers("/api/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
-                .exceptionHandling(e -> e.authenticationEntryPoint((request, response, ex) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"code\":401,\"message\":\"未认证或登录已过期\",\"data\":null}");
-                }))
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint((request, response, ex) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"code\":401,\"message\":\"未认证或登录已过期\",\"data\":null}");
+                        })
+                        .accessDeniedHandler((request, response, ex) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"code\":403,\"message\":\"没有权限执行此操作\",\"data\":null}");
+                        }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
