@@ -45,29 +45,15 @@ public class UserAdminController {
         return ApiResponse.ok();
     }
 
-    /** 开启 / 关闭代理权限。 */
-    @PatchMapping("/{id}/proxy")
-    public ApiResponse<Void> setProxy(@PathVariable Long id,
-                                      @RequestBody ProxyRequest req) {
-        AppUser user = userMapper.selectById(id);
-        if (user == null) return ApiResponse.error(404, "用户不存在");
-        user.setProxyEnabled(req.proxyEnabled());
-        userMapper.updateById(user);
-        return ApiResponse.ok();
-    }
-
     public record EnabledRequest(boolean enabled) {}
-    public record ProxyRequest(boolean proxyEnabled) {}
 
     /** 安全视图：不暴露密码哈希。 */
     public record UserView(Long id, String email, String role,
-                           boolean enabled, boolean proxyEnabled,
-                           String createdAt) {
+                           boolean enabled, String createdAt) {
         static UserView of(AppUser u) {
             return new UserView(
                     u.getId(), u.getEmail(), u.getRole(),
                     Boolean.TRUE.equals(u.getEnabled()),
-                    Boolean.TRUE.equals(u.getProxyEnabled()),
                     u.getCreatedAt() == null ? "" : u.getCreatedAt().toString());
         }
     }

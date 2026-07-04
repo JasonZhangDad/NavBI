@@ -2,6 +2,7 @@
   <AuthShell title="个人中心" :subtitle="auth.username ? `已登录：${auth.username}` : '你已登录 NavBI Pro'">
     <p class="tip">个人功能正在建设中，敬请期待。</p>
     <div class="actions">
+      <el-button size="large" type="primary" @click="downloadClient">下载客户端</el-button>
       <el-button size="large" @click="$router.push('/')">回到导航首页</el-button>
       <el-button size="large" @click="changePassword">修改密码</el-button>
       <el-button size="large" type="danger" plain @click="logout">退出登录</el-button>
@@ -13,12 +14,17 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AuthShell from '../components/AuthShell.vue'
+import { CF_ZERO_TRUST_DOWNLOAD_URL } from '../download'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 function changePassword() {
   router.push({ path: '/reset-password', query: auth.username ? { email: auth.username } : {} })
+}
+
+function downloadClient() {
+  window.open(CF_ZERO_TRUST_DOWNLOAD_URL, '_blank', 'noopener')
 }
 
 function logout() {

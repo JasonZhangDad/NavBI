@@ -17,6 +17,5 @@ public class AppUser {
     private String passwordHash;
     private String role;
     private Boolean enabled;
-    private Boolean proxyEnabled;
     private LocalDateTime createdAt;
 }

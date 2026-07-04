@@ -101,6 +101,15 @@ class NavApiTest extends ApiTestBase {
     }
 
     @Test
+    void ticketEndpointIsNotExposed() throws Exception {
+        long id = addItem("GitHub", "https://github.com", "开发", true);
+
+        mvc.perform(post("/api/nav/ticket/" + id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void updateChangesTitle() throws Exception {
         long id = addItem("Old", "https://old.com", "默认", true);
 

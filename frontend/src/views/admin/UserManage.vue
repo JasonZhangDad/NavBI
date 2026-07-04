@@ -22,17 +22,10 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="代理权限" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.proxyEnabled ? 'warning' : ''" size="small">
-            {{ row.proxyEnabled ? '已开启' : '未开启' }}
-          </el-tag>
-        </template>
-      </el-table-column>
       <el-table-column prop="createdAt" label="注册时间" width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="100" fixed="right">
         <template #default="{ row }">
           <el-button
             size="small"
@@ -40,12 +33,6 @@
             plain
             @click="toggleEnabled(row)"
           >{{ row.enabled ? '封禁' : '解封' }}</el-button>
-          <el-button
-            size="small"
-            :type="row.proxyEnabled ? 'warning' : 'primary'"
-            plain
-            @click="toggleProxy(row)"
-          >{{ row.proxyEnabled ? '关闭代理' : '开启代理' }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -89,14 +76,6 @@ async function toggleEnabled(row) {
   await ElMessageBox.confirm(`确定要${action}用户 ${row.email} 吗？`, '确认操作', { type: 'warning' })
   await http.patch(`/admin/users/${row.id}/enabled`, { enabled: !row.enabled })
   ElMessage.success(`${action}成功`)
-  load()
-}
-
-async function toggleProxy(row) {
-  const action = row.proxyEnabled ? '关闭' : '开启'
-  await ElMessageBox.confirm(`确定要${action}用户 ${row.email} 的代理权限吗？`, '确认操作', { type: 'warning' })
-  await http.patch(`/admin/users/${row.id}/proxy`, { proxyEnabled: !row.proxyEnabled })
-  ElMessage.success(`代理权限已${action}`)
   load()
 }
 

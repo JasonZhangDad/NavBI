@@ -4,6 +4,9 @@
       <!-- 右上角用户区 -->
       <div class="topbar">
         <template v-if="auth.token">
+          <a class="tb-btn tb-download" :href="CF_ZERO_TRUST_DOWNLOAD_URL" target="_blank" rel="noopener">
+            下载客户端
+          </a>
           <router-link class="tb-link" :to="auth.role === 'ADMIN' ? '/admin/dashboard' : '/me'">
             <span class="tb-avatar">{{ (auth.username || auth.role || 'U')[0].toUpperCase() }}</span>
             <span class="tb-name">{{ auth.username || (auth.role === 'ADMIN' ? '管理员' : '我的') }}</span>
@@ -47,9 +50,9 @@
             :key="item.id"
             class="card"
             :href="item.url"
-            target="_blank"
-            rel="noopener"
-            @click="(e) => handleItemClick(e, item)"
+            :target="linkTarget(item.url)"
+            :rel="linkRel(item.url)"
+            @click="handleItemClick(item)"
           >
             <span class="icon">
               <img
@@ -86,10 +89,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
+import { CF_ZERO_TRUST_DOWNLOAD_URL } from '../download'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
@@ -128,29 +131,32 @@ async function load() {
 }
 
 function onClick(item) {
-  http.post(`/nav/click/${item.id}`, null, { headers: { 'X-Session-Id': getSessionId() } }).catch(() => {})
+  const sessionId = getSessionId()
+  const headers = sessionId ? { 'X-Session-Id': sessionId } : {}
+  fetch(`/api/nav/click/${item.id}`, { method: 'POST', headers, keepalive: true }).catch(() => {})
 }
 
-function handleItemClick(e, item) {
-  onClick(item) // track click
-
-  if (auth.token && item.proxyEnabled) {
-    e.preventDefault()
-    
-    // 打开一个空窗口，避免拦截，然后再赋予地址
-    const newTab = window.open('about:blank', '_blank')
-    http.post(`/nav/ticket/${item.id}`)
-      .then(res => {
-        newTab.location.href = `/go/${res.data}`
-      })
-      .catch(err => {
-        ElMessage.warning(err.response?.data?.message || '获取代理失败，将直接访问')
-        newTab.location.href = item.url
-      })
-  }
+function handleItemClick(item) {
+  onClick(item)
 }
 
 const iconFailed = reactive({})
+
+function isExternalUrl(url) {
+  try {
+    return new URL(url, window.location.origin).origin !== window.location.origin
+  } catch {
+    return false
+  }
+}
+
+function linkTarget(url) {
+  return isExternalUrl(url) ? '_blank' : '_self'
+}
+
+function linkRel(url) {
+  return isExternalUrl(url) ? 'noopener' : null
+}
 
 function host(url) {
   try {
@@ -338,6 +344,16 @@ onMounted(() => {
 .tb-ghost:hover {
   background: rgba(42, 120, 214, 0.08);
   border-color: #2a78d6;
+}
+.tb-download {
+  border: 1px solid rgba(27, 175, 122, 0.35);
+  color: #0e7a54;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px);
+}
+.tb-download:hover {
+  background: rgba(27, 175, 122, 0.1);
+  border-color: #1baf7a;
 }
 .tb-primary {
   background: linear-gradient(135deg, #2a78d6 0%, #1a5cb8 100%);

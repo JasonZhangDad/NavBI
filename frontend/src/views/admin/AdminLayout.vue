@@ -13,7 +13,12 @@
     <el-container>
       <el-header class="header">
         <router-link to="/" class="link">← 返回导航站</router-link>
-        <el-button text @click="logout">退出登录</el-button>
+        <div class="header-actions">
+          <a class="download-link" :href="CF_ZERO_TRUST_DOWNLOAD_URL" target="_blank" rel="noopener">
+            下载客户端
+          </a>
+          <el-button text @click="logout">退出登录</el-button>
+        </div>
       </el-header>
       <el-main>
         <router-view />
@@ -25,6 +30,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { CF_ZERO_TRUST_DOWNLOAD_URL } from '../../download'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -67,5 +73,18 @@ function logout() {
 }
 .link:hover {
   color: #2a78d6;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.download-link {
+  color: #0e7a54;
+  text-decoration: none;
+  font-size: 14px;
+}
+.download-link:hover {
+  color: #1baf7a;
 }
 </style>
