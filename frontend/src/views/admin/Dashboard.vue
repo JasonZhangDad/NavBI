@@ -17,6 +17,16 @@
         <span class="sub">独立访客</span>
       </div>
       <div class="tile">
+        <span class="label">访问人数</span>
+        <span class="value">{{ fmt(summary.todayIpCount) }}</span>
+        <span class="sub">今日去重 IP</span>
+      </div>
+      <div class="tile">
+        <span class="label">今日注册</span>
+        <span class="value">{{ fmt(summary.todayRegisterCount) }}</span>
+        <span class="sub">当天新增账号</span>
+      </div>
+      <div class="tile">
         <span class="label">总访问量</span>
         <span class="value">{{ fmt(summary.totalPv) }}</span>
         <span class="sub">累计 UV {{ fmt(summary.totalUv) }}</span>
@@ -37,6 +47,17 @@
         </el-radio-group>
       </div>
       <div ref="trendEl" class="chart chart-lg"></div>
+    </div>
+
+    <div class="row row-2">
+      <div class="panel">
+        <h4>注册趋势</h4>
+        <div ref="registerTrendEl" class="chart"></div>
+      </div>
+      <div class="panel">
+        <h4>注册地区</h4>
+        <div ref="registerGeoEl" class="chart"></div>
+      </div>
     </div>
 
     <div class="row">
@@ -62,8 +83,8 @@
 
     <div class="row row-2">
       <div class="panel">
-        <h4>热门页面 Top10</h4>
-        <div ref="pagesEl" class="chart chart-lg"></div>
+        <h4>热门导航 Top10</h4>
+        <div ref="navsEl" class="chart chart-lg"></div>
       </div>
       <div class="panel">
         <h4>最近访问</h4>
@@ -105,7 +126,16 @@ import http from '../../api'
 const SERIES = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948']
 const INK = { primary: '#0b0b0b', secondary: '#52514e', muted: '#898781', grid: '#e1e0d9', baseline: '#c3c2b7' }
 
-const summary = reactive({ todayPv: 0, todayUv: 0, yesterdayPv: 0, totalPv: 0, totalUv: 0, ipCount: 0 })
+const summary = reactive({
+  todayPv: 0,
+  todayUv: 0,
+  yesterdayPv: 0,
+  totalPv: 0,
+  totalUv: 0,
+  todayIpCount: 0,
+  ipCount: 0,
+  todayRegisterCount: 0
+})
 const logs = ref([])
 const logPage = ref(1)
 const logPageSize = ref(10)
@@ -118,7 +148,9 @@ const trendEl = ref()
 const deviceEl = ref()
 const browserEl = ref()
 const geoEl = ref()
-const pagesEl = ref()
+const navsEl = ref()
+const registerTrendEl = ref()
+const registerGeoEl = ref()
 const charts = {}
 
 function fmt(n) {
@@ -167,6 +199,34 @@ function trendOption(points) {
       { name: 'PV', type: 'line', data: points.map((p) => p.pv), lineStyle: { width: 2 }, showSymbol: false },
       { name: 'UV', type: 'line', data: points.map((p) => p.uv), lineStyle: { width: 2 }, showSymbol: false }
     ]
+  }
+}
+
+function registerTrendOption(points) {
+  return {
+    color: [SERIES[1]],
+    tooltip: { ...baseTooltip, trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: INK.baseline } } },
+    grid: { left: 44, right: 16, top: 18, bottom: 28 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: points.map((p) => p.bucket.slice(5, 10)),
+      ...baseAxis
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLabel: { color: INK.muted, fontSize: 11 },
+      splitLine: { lineStyle: { color: INK.grid } }
+    },
+    series: [{
+      name: '注册量',
+      type: 'line',
+      data: points.map((p) => p.value),
+      lineStyle: { width: 2 },
+      areaStyle: { color: 'rgba(27, 175, 122, 0.12)' },
+      showSymbol: false
+    }]
   }
 }
 
@@ -228,6 +288,15 @@ async function loadLogs() {
   logTotal.value = res.data?.total || 0
 }
 
+async function loadRegisterStats() {
+  const [trend, geo] = await Promise.all([
+    http.get('/bi/register-trend'),
+    http.get('/bi/register-geo')
+  ])
+  charts.registerTrend.setOption(registerTrendOption(trend.data || []), true)
+  charts.registerGeo.setOption(hBarOption((geo.data || []).slice(0, 8)), true)
+}
+
 function onLogPageSizeChange() {
   logPage.value = 1
   loadLogs()
@@ -236,20 +305,27 @@ function onLogPageSizeChange() {
 async function loadAll() {
   loading.value = true
   try {
-    const [sum, device, browser, pages] = await Promise.all([
+    const [sum, device, browser, navs] = await Promise.all([
       http.get('/bi/summary'),
       http.get('/bi/device'),
       http.get('/bi/browser'),
-      http.get('/bi/top-pages')
+      http.get('/nav/all')
     ])
     Object.assign(summary, sum.data)
     charts.device.setOption(donutOption(device.data || []), true)
     charts.browser.setOption(donutOption(browser.data || []), true)
-    charts.pages.setOption(hBarOption(pages.data || []), true)
-    await Promise.all([loadTrend(), loadGeo(), loadLogs()])
+    charts.navs.setOption(hBarOption(topNavs(navs.data || [])), true)
+    await Promise.all([loadTrend(), loadGeo(), loadRegisterStats(), loadLogs()])
   } finally {
     loading.value = false
   }
+}
+
+function topNavs(items) {
+  return items
+    .map((item) => ({ name: item.title, value: item.clickCount || 0 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10)
 }
 
 function onResize() {
@@ -261,7 +337,9 @@ onMounted(() => {
   initChart('device', deviceEl)
   initChart('browser', browserEl)
   initChart('geo', geoEl)
-  initChart('pages', pagesEl)
+  initChart('navs', navsEl)
+  initChart('registerTrend', registerTrendEl)
+  initChart('registerGeo', registerGeoEl)
   window.addEventListener('resize', onResize)
   loadAll()
 })

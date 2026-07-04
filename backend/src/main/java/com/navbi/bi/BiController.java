@@ -42,6 +42,16 @@ public class BiController {
         return ApiResponse.ok(biService.topPages());
     }
 
+    @GetMapping("/register-trend")
+    public ApiResponse<List<RegisterTrendPoint>> registerTrend() {
+        return ApiResponse.ok(biService.registerTrend());
+    }
+
+    @GetMapping("/register-geo")
+    public ApiResponse<List<NameValue>> registerGeo() {
+        return ApiResponse.ok(biService.registerGeo());
+    }
+
     @GetMapping("/device")
     public ApiResponse<List<NameValue>> device() {
         return ApiResponse.ok(biService.deviceShare());

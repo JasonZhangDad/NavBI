@@ -24,17 +24,18 @@ public class TrackingService {
     }
 
     @Async("trackExecutor")
-    public void recordAsync(String ip, String userAgent, String url, String referer, String sessionId) {
+    public void recordAsync(String ip, String userAgent, String countryCode,
+                            String url, String referer, String sessionId) {
         try {
-            record(ip, userAgent, url, referer, sessionId);
+            record(ip, userAgent, countryCode, url, referer, sessionId);
         } catch (Exception e) {
             log.error("访问日志写入失败 ip={} url={}", ip, url, e);
         }
     }
 
-    void record(String ip, String userAgent, String url, String referer, String sessionId) {
+    void record(String ip, String userAgent, String countryCode, String url, String referer, String sessionId) {
         UaInfo ua = uaParser.parse(userAgent);
-        GeoInfo geo = geoResolver.resolve(ip);
+        GeoInfo geo = geoResolver.resolve(ip, countryCode);
 
         VisitLog visitLog = new VisitLog();
         visitLog.setIp(ip);

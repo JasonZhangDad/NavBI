@@ -34,7 +34,9 @@ public class BiService {
         }
         return new SummaryVo(todayPv, todayUv,
                 statMapper.countPvBetween(yesterdayStart, todayStart),
-                statMapper.totalPv(), statMapper.totalUv(), statMapper.distinctIpCount());
+                statMapper.totalPv(), statMapper.totalUv(),
+                statMapper.countIpBetween(todayStart, now), statMapper.distinctIpCount(),
+                statMapper.countUsersBetween(todayStart, now));
     }
 
     public List<TrendPoint> trend(String dimension) {
@@ -47,6 +49,14 @@ public class BiService {
 
     public List<NameValue> topPages() {
         return statMapper.topPages();
+    }
+
+    public List<RegisterTrendPoint> registerTrend() {
+        return statMapper.registerTrendByDay(LocalDate.now().minusDays(29).atStartOfDay());
+    }
+
+    public List<NameValue> registerGeo() {
+        return statMapper.registerGeo();
     }
 
     public List<NameValue> deviceShare() {

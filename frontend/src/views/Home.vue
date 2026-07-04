@@ -92,7 +92,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import http from '../api'
-import { trackVisit, getSessionId } from '../track'
+import { getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
 import { useAuthStore } from '../stores/auth'
 import ClientDownloadDialog from '../components/ClientDownloadDialog.vue'
@@ -171,7 +171,6 @@ function host(url) {
 
 onMounted(() => {
   load()
-  trackVisit('/')
 })
 </script>
 

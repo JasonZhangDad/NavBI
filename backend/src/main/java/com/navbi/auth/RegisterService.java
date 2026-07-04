@@ -1,6 +1,8 @@
 package com.navbi.auth;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.navbi.track.GeoInfo;
+import com.navbi.track.GeoResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,15 +22,17 @@ public class RegisterService {
     private final MailSender mailSender;
     private final RateLimiter rateLimiter;
     private final PasswordEncoder passwordEncoder;
+    private final GeoResolver geoResolver;
     private final SecureRandom random = new SecureRandom();
 
     public RegisterService(AppUserMapper userMapper, EmailCodeMapper codeMapper, MailSender mailSender,
-                           RateLimiter rateLimiter, PasswordEncoder passwordEncoder) {
+                           RateLimiter rateLimiter, PasswordEncoder passwordEncoder, GeoResolver geoResolver) {
         this.userMapper = userMapper;
         this.codeMapper = codeMapper;
         this.mailSender = mailSender;
         this.rateLimiter = rateLimiter;
         this.passwordEncoder = passwordEncoder;
+        this.geoResolver = geoResolver;
     }
 
     public void sendCode(String email, String ip) {
@@ -47,7 +51,7 @@ public class RegisterService {
         issueCode(email, "NavBI 修改密码验证码");
     }
 
-    public void register(String email, String code, String password, String ip) {
+    public void register(String email, String code, String password, String ip, String countryCode) {
         if (!rateLimiter.tryAcquire("register-ip:" + ip, 5, Duration.ofHours(1))) {
             throw new RateLimitExceededException("注册请求过于频繁，请稍后再试");
         }
@@ -60,6 +64,11 @@ public class RegisterService {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setRole("USER");
+        user.setRegisterIp(ip);
+        GeoInfo geo = geoResolver.resolve(ip, countryCode);
+        user.setCountry(geo.country());
+        user.setProvince(geo.province());
+        user.setCity(geo.city());
         user.setCreatedAt(LocalDateTime.now());
         userMapper.insert(user);
         log.info("新用户注册: {}", email);

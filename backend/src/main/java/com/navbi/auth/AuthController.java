@@ -100,7 +100,7 @@ public class AuthController {
     @PostMapping("/register")
     public ApiResponse<Void> register(@Validated @RequestBody RegisterRequest request, HttpServletRequest http) {
         registerService.register(request.email(), request.code(), request.password(),
-                ClientIpUtil.resolve(http));
+                ClientIpUtil.resolve(http), http.getHeader("CF-IPCountry"));
         return ApiResponse.ok();
     }
 

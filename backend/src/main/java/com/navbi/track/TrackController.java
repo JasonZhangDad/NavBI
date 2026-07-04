@@ -35,7 +35,8 @@ public class TrackController {
                 : body.sessionId();
         String ip = ClientIpUtil.resolve(request);
         counterService.recordVisit(sessionId, ip);
-        trackingService.recordAsync(ip, request.getHeader("User-Agent"), body.url(), body.referer(), sessionId);
+        trackingService.recordAsync(ip, request.getHeader("User-Agent"), request.getHeader("CF-IPCountry"),
+                body.url(), body.referer(), sessionId);
         return ApiResponse.ok(Map.of("sessionId", sessionId));
     }
 }

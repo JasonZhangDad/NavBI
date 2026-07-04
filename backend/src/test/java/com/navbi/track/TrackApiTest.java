@@ -42,11 +42,31 @@ class TrackApiTest extends ApiTestBase {
         Map<String, Object> row = jdbc.queryForMap("SELECT * FROM visit_log LIMIT 1");
         assertThat(row.get("browser")).isEqualTo("Chrome");
         assertThat(row.get("device")).isEqualTo("PC");
-        assertThat((String) row.get("os")).contains("Mac");
+        assertThat(row.get("os")).isEqualTo("macOS");
         assertThat(row.get("ip")).isEqualTo("114.114.114.114");
         assertThat(row.get("country")).isEqualTo("中国");
         assertThat(row.get("session_id")).isEqualTo(sessionId);
         assertThat(row.get("referer")).isEqualTo("https://google.com");
+    }
+
+    @Test
+    void trackUsesCloudflareIpv6AndCountryHeader() throws Exception {
+        mvc.perform(post("/api/track")
+                        .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+                                + "AppleWebKit/605.1.15 (Version/17.5 Mobile/15E148 Safari/604.1")
+                        .header("CF-Connecting-IP", "2409:8a28:1234::1")
+                        .header("CF-IPCountry", "CN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"url\":\"/admin/categories\",\"referer\":\"https://nav.magies.top\"}"))
+                .andExpect(status().isOk());
+        awaitRowCount("visit_log", 1);
+
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM visit_log LIMIT 1");
+        assertThat(row.get("ip")).isEqualTo("2409:8a28:1234::1");
+        assertThat(row.get("country")).isEqualTo("中国");
+        assertThat(row.get("device")).isEqualTo("手机");
+        assertThat(row.get("browser")).isEqualTo("Safari");
+        assertThat(row.get("url")).isEqualTo("/admin/categories");
     }
 
     @Test

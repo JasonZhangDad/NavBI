@@ -62,11 +62,21 @@ CREATE TABLE IF NOT EXISTS app_user (
   password_hash VARCHAR(100) NOT NULL,
   role VARCHAR(16) NOT NULL DEFAULT 'USER',
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  register_ip VARCHAR(64),
+  country VARCHAR(64),
+  province VARCHAR(64),
+  city VARCHAR(64),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 安全迁移：已有表补列
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS register_ip VARCHAR(64);
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS country VARCHAR(64);
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS province VARCHAR(64);
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS city VARCHAR(64);
+CREATE INDEX IF NOT EXISTS idx_app_user_created_at ON app_user (created_at);
+CREATE INDEX IF NOT EXISTS idx_app_user_region ON app_user (country, province);
 
 CREATE TABLE IF NOT EXISTS email_code (
   id BIGSERIAL PRIMARY KEY,

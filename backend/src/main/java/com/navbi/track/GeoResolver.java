@@ -5,9 +5,12 @@ import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.util.Locale;
+
 /**
  * 基于 ip2region 离线 xdb 的地域解析。xdb 全量加载进内存，单次查询微秒级。
- * xdb 文件缺失或 IP 无法解析（如 IPv6）时返回"未知"，不阻断埋点链路。
+ * xdb 文件缺失或 IP 无法解析时返回"未知"，不阻断埋点链路。
  */
 @Slf4j
 @Component
@@ -24,6 +27,15 @@ public class GeoResolver {
             log.warn("ip2region.xdb 加载失败，地域解析降级为未知: {}", e.getMessage());
         }
         this.searcher = loaded;
+    }
+
+    public GeoInfo resolve(String ip, String countryCode) {
+        GeoInfo geo = resolve(ip);
+        if (!GeoInfo.UNKNOWN.equals(geo)) {
+            return geo;
+        }
+        String country = countryFromCode(countryCode);
+        return country == null ? GeoInfo.UNKNOWN : new GeoInfo(country, "未知", "未知");
     }
 
     public GeoInfo resolve(String ip) {
@@ -45,12 +57,33 @@ public class GeoResolver {
         }
     }
 
+    private static String countryFromCode(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return null;
+        }
+        String code = countryCode.trim().toUpperCase(Locale.ROOT);
+        if (code.length() != 2 || "XX".equals(code) || "T1".equals(code)) {
+            return null;
+        }
+        String country = new Locale("", code).getDisplayCountry(Locale.SIMPLIFIED_CHINESE);
+        return country == null || country.isBlank() || country.equals(code) ? null : country;
+    }
+
     private static String part(String[] parts, int index) {
         return parts.length > index && !parts[index].isBlank() && !"0".equals(parts[index])
                 ? parts[index] : "未知";
     }
 
     private static boolean isPrivate(String ip) {
+        try {
+            InetAddress address = InetAddress.getByName(ip);
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress()
+                    || address.isLinkLocalAddress() || address.isSiteLocalAddress()) {
+                return true;
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
         if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("127.")
                 || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
             return true;

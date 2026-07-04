@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,10 +52,21 @@ class RegisterApiTest extends ApiTestBase {
     }
 
     private int register(String email, String code, String password) throws Exception {
-        return mvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"code\":\"" + code
-                                + "\",\"password\":\"" + password + "\"}"))
+        return register(email, code, password, null, null);
+    }
+
+    private int register(String email, String code, String password, String ip, String countryCode) throws Exception {
+        var builder = post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + email + "\",\"code\":\"" + code
+                        + "\",\"password\":\"" + password + "\"}");
+        if (ip != null) {
+            builder.header("CF-Connecting-IP", ip);
+        }
+        if (countryCode != null) {
+            builder.header("CF-IPCountry", countryCode);
+        }
+        return mvc.perform(builder)
                 .andReturn().getResponse().getStatus();
     }
 
@@ -100,6 +112,20 @@ class RegisterApiTest extends ApiTestBase {
                         .content("{\"username\":\"a@b.com\",\"password\":\"password8\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.role").value("USER"));
+    }
+
+    @Test
+    void registerStoresIpAndGeo() throws Exception {
+        insertCode("a@b.com", "654321", "DATEADD('MINUTE', 10, CURRENT_TIMESTAMP)");
+
+        assertThat(register("a@b.com", "654321", "password8", "2606:4700:4700::1111", "CN")).isEqualTo(200);
+
+        Map<String, Object> row = jdbc.queryForMap(
+                "SELECT register_ip, country, province, city FROM app_user WHERE email = 'a@b.com'");
+        assertThat(row.get("register_ip")).isEqualTo("2606:4700:4700::1111");
+        assertThat(row.get("country")).isEqualTo("中国");
+        assertThat(row.get("province")).isEqualTo("未知");
+        assertThat(row.get("city")).isEqualTo("未知");
     }
 
     @Test

@@ -17,5 +17,9 @@ public class AppUser {
     private String passwordHash;
     private String role;
     private Boolean enabled;
+    private String registerIp;
+    private String country;
+    private String province;
+    private String city;
     private LocalDateTime createdAt;
 }

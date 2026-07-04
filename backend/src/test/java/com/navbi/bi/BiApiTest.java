@@ -30,6 +30,9 @@ class BiApiTest extends ApiTestBase {
         insertLog("s1", "1.1.1.1", "/tools", "PC", "Chrome", "中国", "广东省", LocalDateTime.now());
         insertLog("s2", "2.2.2.2", "/", "手机", "Safari", "美国", "未知", LocalDateTime.now());
         insertLog("s3", "3.3.3.3", "/", "PC", "Edge", "中国", "北京市", LocalDateTime.now().minusDays(1));
+        insertUser("today-cn@b.com", "中国", "广东省", LocalDateTime.now());
+        insertUser("today-us@b.com", "美国", "未知", LocalDateTime.now());
+        insertUser("old-cn@b.com", "中国", "广东省", LocalDateTime.now().minusDays(1));
     }
 
     private void insertLog(String sessionId, String ip, String url, String device, String browser,
@@ -48,6 +51,12 @@ class BiApiTest extends ApiTestBase {
         visitLogMapper.insert(log);
     }
 
+    private void insertUser(String email, String country, String province, LocalDateTime createdAt) {
+        jdbc.update("INSERT INTO app_user (email, password_hash, role, country, province, city, created_at) "
+                        + "VALUES (?, 'x', 'USER', ?, ?, '未知', ?)",
+                email, country, province, createdAt);
+    }
+
     @Test
     void summaryCountsMatchSeed() throws Exception {
         mvc.perform(get("/api/bi/summary").header("Authorization", "Bearer " + token))
@@ -57,7 +66,9 @@ class BiApiTest extends ApiTestBase {
                 .andExpect(jsonPath("$.data.yesterdayPv").value(1))
                 .andExpect(jsonPath("$.data.totalPv").value(4))
                 .andExpect(jsonPath("$.data.totalUv").value(3))
-                .andExpect(jsonPath("$.data.ipCount").value(3));
+                .andExpect(jsonPath("$.data.todayIpCount").value(2))
+                .andExpect(jsonPath("$.data.ipCount").value(3))
+                .andExpect(jsonPath("$.data.todayRegisterCount").value(2));
     }
 
     @Test
@@ -82,6 +93,23 @@ class BiApiTest extends ApiTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].name").value("/"))
                 .andExpect(jsonPath("$.data[0].value").value(3));
+    }
+
+    @Test
+    void registerTrendByDayAggregates() throws Exception {
+        mvc.perform(get("/api/bi/register-trend").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].value").value(1))
+                .andExpect(jsonPath("$.data[1].value").value(2));
+    }
+
+    @Test
+    void registerGeoAggregates() throws Exception {
+        mvc.perform(get("/api/bi/register-geo").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("广东省"))
+                .andExpect(jsonPath("$.data[0].value").value(2));
     }
 
     @Test

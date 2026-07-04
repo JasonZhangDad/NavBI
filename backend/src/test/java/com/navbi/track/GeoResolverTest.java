@@ -26,4 +26,13 @@ class GeoResolverTest {
         assertThat(resolver.resolve("not-an-ip")).isEqualTo(GeoInfo.UNKNOWN);
         assertThat(resolver.resolve(null)).isEqualTo(GeoInfo.UNKNOWN);
     }
+
+    @Test
+    void ipv6FallsBackToCloudflareCountryHeader() {
+        GeoInfo geo = resolver.resolve("2409:8a28:1234::1", "CN");
+
+        assertThat(geo.country()).isEqualTo("中国");
+        assertThat(geo.province()).isEqualTo("未知");
+        assertThat(geo.city()).isEqualTo("未知");
+    }
 }
