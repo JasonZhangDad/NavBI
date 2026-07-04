@@ -28,6 +28,9 @@ services:
       NAVBI_JWT_SECRET: ${NAVBI_JWT_SECRET:?请在 .env 中设置 JWT 密钥(>=32字节)}
       NAVBI_MAIL_API_URL: ${NAVBI_MAIL_API_URL:-}
       NAVBI_MAIL_API_TOKEN: ${NAVBI_MAIL_API_TOKEN:-}
+      NAVBI_DOWNLOAD_DIR: /opt/navbi/downloads
+    volumes:
+      - ./downloads:/opt/navbi/downloads:ro
     depends_on:
       - postgres
       - redis

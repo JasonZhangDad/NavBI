@@ -31,6 +31,8 @@ navbi:
     # 验证码邮件 API；不配置则只打日志（本地开发）
     api-url: ${NAVBI_MAIL_API_URL:}
     api-token: ${NAVBI_MAIL_API_TOKEN:}
+  download:
+    dir: ${NAVBI_DOWNLOAD_DIR:/opt/navbi/downloads}
 
 server:
   port: 8080

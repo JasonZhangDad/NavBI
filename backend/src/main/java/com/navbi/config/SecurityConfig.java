@@ -24,6 +24,7 @@ public class SecurityConfig {
                                 "/api/auth/password/code", "/api/auth/password/reset",
                                 "/api/track", "/api/nav/list", "/api/nav/click/**", "/api/nav/icon/**")
                         .permitAll()
+                        .requestMatchers("/api/downloads/**").authenticated()
                         // 普通注册用户暂无可见后端资源：管理与 BI 接口全部仅限管理员
                         .requestMatchers("/api/**").hasRole("ADMIN")
                         .anyRequest().permitAll())

@@ -4,9 +4,9 @@
       <!-- 右上角用户区 -->
       <div class="topbar">
         <template v-if="auth.token">
-          <a class="tb-btn tb-download" :href="CF_ZERO_TRUST_DOWNLOAD_URL" target="_blank" rel="noopener">
+          <button class="tb-btn tb-download" type="button" @click="downloadDialogVisible = true">
             下载客户端
-          </a>
+          </button>
           <router-link class="tb-link" :to="auth.role === 'ADMIN' ? '/admin/dashboard' : '/me'">
             <span class="tb-avatar">{{ (auth.username || auth.role || 'U')[0].toUpperCase() }}</span>
             <span class="tb-name">{{ auth.username || (auth.role === 'ADMIN' ? '管理员' : '我的') }}</span>
@@ -84,6 +84,8 @@
         <router-link to="/register">注册</router-link>
       </p>
     </footer>
+
+    <ClientDownloadDialog v-model="downloadDialogVisible" />
   </div>
 </template>
 
@@ -92,8 +94,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import http from '../api'
 import { trackVisit, getSessionId } from '../track'
 import { iconSrc, fallbackEmoji } from '../icon'
-import { CF_ZERO_TRUST_DOWNLOAD_URL } from '../download'
 import { useAuthStore } from '../stores/auth'
+import ClientDownloadDialog from '../components/ClientDownloadDialog.vue'
 
 const auth = useAuthStore()
 
@@ -101,6 +103,7 @@ const groups = ref([])
 const keyword = ref('')
 const activeCategory = ref('全部')
 const loading = ref(true)
+const downloadDialogVisible = ref(false)
 
 /** 分类过滤条：由数据动态生成，后台增删分类自动生效 */
 const categories = computed(() => ['全部', ...groups.value.map((g) => g.category)])
@@ -334,6 +337,7 @@ onMounted(() => {
   text-decoration: none;
   transition: all 0.15s;
   white-space: nowrap;
+  cursor: pointer;
 }
 .tb-ghost {
   border: 1px solid rgba(42, 120, 214, 0.4);

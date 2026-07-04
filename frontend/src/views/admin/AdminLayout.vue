@@ -14,9 +14,9 @@
       <el-header class="header">
         <router-link to="/" class="link">← 返回导航站</router-link>
         <div class="header-actions">
-          <a class="download-link" :href="CF_ZERO_TRUST_DOWNLOAD_URL" target="_blank" rel="noopener">
+          <button class="download-link" type="button" @click="downloadDialogVisible = true">
             下载客户端
-          </a>
+          </button>
           <el-button text @click="logout">退出登录</el-button>
         </div>
       </el-header>
@@ -24,16 +24,19 @@
         <router-view />
       </el-main>
     </el-container>
+    <ClientDownloadDialog v-model="downloadDialogVisible" />
   </el-container>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { CF_ZERO_TRUST_DOWNLOAD_URL } from '../../download'
+import ClientDownloadDialog from '../../components/ClientDownloadDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const downloadDialogVisible = ref(false)
 
 function logout() {
   auth.logout()
@@ -81,8 +84,11 @@ function logout() {
 }
 .download-link {
   color: #0e7a54;
-  text-decoration: none;
   font-size: 14px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
 }
 .download-link:hover {
   color: #1baf7a;
