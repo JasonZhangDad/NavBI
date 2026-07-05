@@ -40,7 +40,7 @@
 
     <div class="panel">
       <div class="panel-head">
-        <h4>访问趋势</h4>
+        <h4>访问趋势（3D，可拖拽旋转）</h4>
         <el-radio-group v-model="trendDim" size="small" @change="loadTrend">
           <el-radio-button value="hour">近 24 小时</el-radio-button>
           <el-radio-button value="day">近 30 天</el-radio-button>
@@ -120,11 +120,16 @@
 <script setup>
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as echarts from 'echarts'
+import 'echarts-gl'
+import { animate, utils } from 'animejs'
 import http from '../../api'
 
-/* dataviz 参考调色板：固定槽位顺序，不循环生成 */
-const SERIES = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948']
-const INK = { primary: '#0b0b0b', secondary: '#52514e', muted: '#898781', grid: '#e1e0d9', baseline: '#c3c2b7' }
+/* dataviz 参考调色板深色档：固定槽位顺序，不循环生成（已按面板底色 #151826 校验通过） */
+const SERIES = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767']
+const INK = { primary: '#ffffff', secondary: '#c3c2b7', muted: '#898781', grid: '#2a3046', baseline: '#3a4160' }
+const PANEL_BG = '#151826'
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const summary = reactive({
   todayPv: 0,
@@ -168,36 +173,75 @@ function initChart(key, el) {
   return charts[key]
 }
 
+/** 指标数字滚动：anime.js 逐帧写 reactive 对象驱动视图 */
+function applySummary(data) {
+  const target = {}
+  Object.keys(summary).forEach((k) => (target[k] = data?.[k] ?? 0))
+  if (reducedMotion) {
+    Object.assign(summary, target)
+    return
+  }
+  animate(summary, { ...target, duration: 900, ease: 'outCubic', modifier: utils.round(0) })
+}
+
 const baseAxis = {
   axisLabel: { color: INK.muted, fontSize: 11 },
   axisLine: { lineStyle: { color: INK.baseline } },
   axisTick: { show: false }
 }
 const baseTooltip = {
-  backgroundColor: '#fcfcfb',
-  borderColor: 'rgba(11,11,11,0.1)',
-  textStyle: { color: INK.primary, fontSize: 12 }
+  backgroundColor: '#1c2233',
+  borderColor: 'rgba(255,255,255,0.12)',
+  textStyle: { color: '#e8eaf2', fontSize: 12 }
 }
 
+/** 访问趋势：echarts-gl bar3D，PV/UV 两排柱，支持拖拽旋转 */
 function trendOption(points) {
   const labels = points.map((p) =>
     trendDim.value === 'hour' ? p.bucket.slice(11, 16) : p.bucket.slice(5, 10)
   )
+  const axis3dLabel = { color: INK.muted, fontSize: 10 }
+  const axis3dLine = { lineStyle: { color: INK.baseline } }
   return {
-    color: SERIES,
-    tooltip: { ...baseTooltip, trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: INK.baseline } } },
+    tooltip: {
+      ...baseTooltip,
+      formatter: (p) => `${labels[p.value[0]]}<br/>${p.marker}${p.seriesName}：${p.value[2]}`
+    },
     legend: { right: 0, top: 0, textStyle: { color: INK.secondary } },
-    grid: { left: 44, right: 16, top: 36, bottom: 28 },
-    xAxis: { type: 'category', boundaryGap: false, data: labels, ...baseAxis },
-    yAxis: {
+    xAxis3D: { type: 'category', data: labels, axisLabel: axis3dLabel, axisLine: axis3dLine },
+    yAxis3D: { type: 'category', data: ['PV', 'UV'], axisLabel: { ...axis3dLabel, fontSize: 11 }, axisLine: axis3dLine },
+    zAxis3D: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { color: INK.muted, fontSize: 11 },
+      axisLabel: axis3dLabel,
+      axisLine: axis3dLine,
       splitLine: { lineStyle: { color: INK.grid } }
     },
+    grid3D: {
+      boxWidth: 190,
+      boxDepth: 28,
+      boxHeight: 55,
+      top: -10,
+      light: { main: { intensity: 1.2, shadow: false }, ambient: { intensity: 0.45 } },
+      viewControl: { alpha: 24, beta: 6, distance: 175, minDistance: 100, maxDistance: 420 }
+    },
     series: [
-      { name: 'PV', type: 'line', data: points.map((p) => p.pv), lineStyle: { width: 2 }, showSymbol: false },
-      { name: 'UV', type: 'line', data: points.map((p) => p.uv), lineStyle: { width: 2 }, showSymbol: false }
+      {
+        name: 'PV',
+        type: 'bar3D',
+        shading: 'lambert',
+        data: points.map((p, i) => [i, 0, p.pv]),
+        itemStyle: { color: SERIES[0] },
+        emphasis: { itemStyle: { color: '#6ea8f0' } }
+      },
+      {
+        name: 'UV',
+        type: 'bar3D',
+        shading: 'lambert',
+        data: points.map((p, i) => [i, 1, p.uv]),
+        itemStyle: { color: SERIES[1] },
+        emphasis: { itemStyle: { color: '#2fce96' } }
+      }
     ]
   }
 }
@@ -224,7 +268,7 @@ function registerTrendOption(points) {
       type: 'line',
       data: points.map((p) => p.value),
       lineStyle: { width: 2 },
-      areaStyle: { color: 'rgba(27, 175, 122, 0.12)' },
+      areaStyle: { color: 'rgba(25, 158, 112, 0.18)' },
       showSymbol: false
     }]
   }
@@ -238,7 +282,7 @@ function donutOption(data) {
       type: 'pie',
       radius: ['52%', '74%'],
       center: ['50%', '52%'],
-      itemStyle: { borderColor: '#fcfcfb', borderWidth: 2, borderRadius: 4 },
+      itemStyle: { borderColor: PANEL_BG, borderWidth: 2, borderRadius: 4 },
       label: { color: INK.secondary, fontSize: 11, formatter: '{b} {c}' },
       labelLine: { lineStyle: { color: INK.baseline } },
       data: data.map((d) => ({ name: d.name, value: d.value }))
@@ -311,7 +355,7 @@ async function loadAll() {
       http.get('/bi/browser'),
       http.get('/nav/all')
     ])
-    Object.assign(summary, sum.data)
+    applySummary(sum.data)
     charts.device.setOption(donutOption(device.data || []), true)
     charts.browser.setOption(donutOption(browser.data || []), true)
     charts.navs.setOption(hBarOption(topNavs(navs.data || [])), true)
@@ -351,6 +395,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.dash {
+  margin: -20px;
+  padding: 20px;
+  min-height: calc(100vh - 60px);
+  background:
+    radial-gradient(1000px 420px at 70% -10%, rgba(57, 135, 229, 0.12), transparent 60%),
+    #0d1120;
+  color: #e8eaf2;
+}
 .toolbar {
   display: flex;
   align-items: center;
@@ -359,6 +412,7 @@ onBeforeUnmount(() => {
 }
 .toolbar h3 {
   margin: 0;
+  color: #ffffff;
 }
 .tiles {
   display: grid;
@@ -367,8 +421,9 @@ onBeforeUnmount(() => {
   margin-bottom: 14px;
 }
 .tile {
-  background: #fcfcfb;
-  border: 1px solid rgba(11, 11, 11, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
   border-radius: 10px;
   padding: 16px 18px;
   display: flex;
@@ -377,19 +432,22 @@ onBeforeUnmount(() => {
 }
 .tile .label {
   font-size: 13px;
-  color: #52514e;
+  color: #9aa3b8;
 }
 .tile .value {
   font-size: 30px;
   font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(57, 135, 229, 0.35);
 }
 .tile .sub {
   font-size: 12px;
-  color: #898781;
+  color: #7d879e;
 }
 .panel {
-  background: #fcfcfb;
-  border: 1px solid rgba(11, 11, 11, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 14px;
@@ -397,7 +455,7 @@ onBeforeUnmount(() => {
 .panel h4 {
   margin: 0 0 8px;
   font-size: 14px;
-  color: #52514e;
+  color: #b6bdd0;
 }
 .panel-head {
   display: flex;
@@ -429,5 +487,65 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+}
+
+/* ── Element Plus 深色适配 ── */
+.dash :deep(.el-button) {
+  --el-button-bg-color: rgba(255, 255, 255, 0.06);
+  --el-button-border-color: rgba(255, 255, 255, 0.16);
+  --el-button-text-color: #c3c2b7;
+  --el-button-hover-bg-color: rgba(57, 135, 229, 0.15);
+  --el-button-hover-border-color: #3987e5;
+  --el-button-hover-text-color: #6ea8f0;
+}
+.dash :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #b6bdd0;
+  box-shadow: none;
+}
+.dash :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #3987e5, #2361b8);
+  border-color: #3987e5;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(57, 135, 229, 0.4);
+}
+.dash :deep(.el-table) {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.04);
+  --el-table-header-text-color: #b6bdd0;
+  --el-table-text-color: #c3c2b7;
+  --el-table-border-color: rgba(255, 255, 255, 0.08);
+  --el-table-row-hover-bg-color: rgba(57, 135, 229, 0.08);
+}
+.dash :deep(.el-table__empty-text) {
+  color: #7d879e;
+}
+.dash :deep(.el-pagination) {
+  --el-pagination-bg-color: rgba(255, 255, 255, 0.06);
+  --el-pagination-text-color: #c3c2b7;
+  --el-pagination-button-color: #c3c2b7;
+  color: #c3c2b7;
+}
+.dash :deep(.el-pagination .el-select .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+}
+.dash :deep(.el-pagination .el-input__inner) {
+  color: #c3c2b7;
+}
+.dash :deep(.el-pagination.is-background .el-pager li) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #c3c2b7;
+}
+.dash :deep(.el-pagination.is-background .el-pager li.is-active) {
+  background: #3987e5;
+  color: #fff;
+}
+.dash :deep(.el-pagination.is-background .btn-prev),
+.dash :deep(.el-pagination.is-background .btn-next) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #c3c2b7;
 }
 </style>
