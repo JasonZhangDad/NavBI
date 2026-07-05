@@ -396,12 +396,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .dash {
-  margin: -20px;
-  padding: 20px;
-  min-height: calc(100vh - 60px);
-  background:
-    radial-gradient(1000px 420px at 70% -10%, rgba(57, 135, 229, 0.12), transparent 60%),
-    #0d1120;
+  min-height: calc(100vh - 100px);
   color: #e8eaf2;
 }
 .toolbar {
