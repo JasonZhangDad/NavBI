@@ -17,7 +17,7 @@ let sprite = null
 const pointer = { x: 0, y: 0 }
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const CAMERA_Z = 110
-const NEAR_Z = 94
+const NEAR_Z = 108
 
 /** 圆形发光贴图：PointsMaterial 默认渲染方形点，必须贴图才有星光观感 */
 function makeSprite() {
@@ -41,13 +41,14 @@ function resetStar(positions, index, spread, depth) {
   positions[index + 2] = -80 - Math.random() * depth
 }
 
-function makeLayer(count, size, color, spread, depth, speed) {
+function makeLayer(count, size, color, spread, depth, speed, trail) {
   const positions = new Float32Array(count * 3)
+  const trails = new Float32Array(count * 6)
   for (let i = 0; i < count; i++) {
     resetStar(positions, i * 3, spread, depth)
   }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  const pointGeometry = new THREE.BufferGeometry()
+  pointGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   const material = new THREE.PointsMaterial({
     color,
     size,
@@ -58,10 +59,29 @@ function makeLayer(count, size, color, spread, depth, speed) {
     blending: THREE.AdditiveBlending,
     depthWrite: false
   })
-  const points = new THREE.Points(geometry, material)
-  points.userData = { spread, depth, speed }
-  scene.add(points)
-  return points
+  const trailGeometry = new THREE.BufferGeometry()
+  trailGeometry.setAttribute('position', new THREE.BufferAttribute(trails, 3))
+  const trailMaterial = new THREE.LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.46,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+  const group = new THREE.Group()
+  group.add(new THREE.LineSegments(trailGeometry, trailMaterial))
+  group.add(new THREE.Points(pointGeometry, material))
+  group.userData = {
+    spread,
+    depth,
+    speed,
+    trail,
+    pointPosition: pointGeometry.attributes.position,
+    trailPosition: trailGeometry.attributes.position
+  }
+  scene.add(group)
+  updateTrailSegments(group)
+  return group
 }
 
 function onPointerMove(e) {
@@ -75,8 +95,26 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight)
 }
 
+function updateTrailSegments(layer) {
+  const { pointPosition, trailPosition, trail } = layer.userData
+  const positions = pointPosition.array
+  const trails = trailPosition.array
+  for (let i = 0, j = 0; i < positions.length; i += 3, j += 6) {
+    const x = positions[i]
+    const y = positions[i + 1]
+    const z = positions[i + 2]
+    trails[j] = x
+    trails[j + 1] = y
+    trails[j + 2] = z
+    trails[j + 3] = x * 0.82
+    trails[j + 4] = y * 0.82
+    trails[j + 5] = z - trail
+  }
+  trailPosition.needsUpdate = true
+}
+
 function moveLayerTowardCamera(layer) {
-  const position = layer.geometry.attributes.position
+  const position = layer.userData.pointPosition
   const positions = position.array
   const { spread, depth, speed } = layer.userData
   for (let i = 2; i < positions.length; i += 3) {
@@ -86,12 +124,13 @@ function moveLayerTowardCamera(layer) {
     }
   }
   position.needsUpdate = true
+  updateTrailSegments(layer)
 }
 
 function tick() {
   layers.forEach((layer, i) => {
     moveLayerTowardCamera(layer)
-    layer.rotation.z += 0.0004 * (i + 1)
+    layer.rotation.z += 0.0011 * (i + 1)
   })
   camera.position.x += (pointer.x * 14 - camera.position.x) * 0.035
   camera.position.y += (-pointer.y * 10 - camera.position.y) * 0.035
@@ -112,9 +151,9 @@ onMounted(() => {
 
   sprite = makeSprite()
   layers = [
-    makeLayer(950, 4.6, 0x5aa2f0, 260, 560, 1.8),
-    makeLayer(680, 3.5, 0x2fce96, 220, 440, 1.25),
-    makeLayer(360, 6.4, 0xb0a8ff, 320, 680, 2.45)
+    makeLayer(820, 7.4, 0x5aa2f0, 260, 360, 4.6, 34),
+    makeLayer(560, 5.8, 0x2fce96, 220, 300, 3.2, 24),
+    makeLayer(320, 9.2, 0xb0a8ff, 320, 430, 6.4, 46)
   ]
 
   window.addEventListener('resize', onResize)
@@ -131,8 +170,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   window.removeEventListener('pointermove', onPointerMove)
   layers.forEach((layer) => {
-    layer.geometry.dispose()
-    layer.material.dispose()
+    layer.children.forEach((child) => {
+      child.geometry.dispose()
+      child.material.dispose()
+    })
   })
   sprite.dispose()
   renderer.dispose()
@@ -163,15 +204,15 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 222px 128px, rgba(255, 255, 255, 0.88) 0 1.4px, transparent 2.4px);
   background-size: 260px 190px;
   opacity: 0.58;
-  animation: starfield-drift 22s linear infinite;
+  animation: starfield-drift 8s linear infinite;
 }
 .starfield::after {
   --scale: 1.55;
-  --drift-x: 4%;
-  --drift-y: -3%;
+  --drift-x: 13%;
+  --drift-y: -9%;
   background-size: 340px 260px;
   opacity: 0.4;
-  animation-duration: 34s;
+  animation-duration: 13s;
 }
 .starfield canvas {
   position: absolute;
@@ -183,7 +224,7 @@ onBeforeUnmount(() => {
     transform: translate3d(0, 0, 0) scale(var(--scale, 1));
   }
   to {
-    transform: translate3d(var(--drift-x, -3%), var(--drift-y, 2%), 0) scale(var(--scale, 1));
+    transform: translate3d(var(--drift-x, -10%), var(--drift-y, 7%), 0) scale(var(--scale, 1));
   }
 }
 @media (prefers-reduced-motion: reduce) {

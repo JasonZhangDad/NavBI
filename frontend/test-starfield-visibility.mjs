@@ -24,8 +24,12 @@ assert(starfield.includes('transform: translateZ(0)'), 'Starfield canvas should 
 assert(starfield.includes('CAMERA_Z = 110'), 'Camera should be close enough for visible depth')
 assert(starfield.includes('moveLayerTowardCamera'), 'Three.js stars should move toward the camera')
 assert(starfield.includes('position.needsUpdate = true'), 'Moving stars should flush geometry updates')
+assert(starfield.includes('THREE.LineSegments'), 'Three.js stars should have visible motion trails')
+assert(starfield.includes('makeLayer(820, 7.4'), 'Foreground stars should be large enough to notice')
+assert(starfield.includes('4.6, 34'), 'Foreground stars should move fast enough to notice')
 assert(starfield.includes('.starfield::before'), 'Starfield should have a visible CSS fallback layer')
 assert(starfield.includes('@keyframes starfield-drift'), 'Starfield fallback should animate when motion is allowed')
+assert(starfield.includes('animation: starfield-drift 8s'), 'Fallback stars should drift visibly')
 
 for (const [name, source] of [
   ['Home', home],
