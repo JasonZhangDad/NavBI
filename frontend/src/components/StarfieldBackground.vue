@@ -44,7 +44,7 @@ function makeLayer(count, size, color, spread) {
     map: sprite,
     sizeAttenuation: true,
     transparent: true,
-    opacity: 0.75,
+    opacity: 0.9,
     blending: THREE.AdditiveBlending,
     depthWrite: false
   })
@@ -66,8 +66,8 @@ function onResize() {
 
 function tick() {
   layers.forEach((layer, i) => {
-    layer.rotation.y += 0.0003 * (i + 1)
-    layer.rotation.x += 0.0001 * (i + 1)
+    layer.rotation.y += 0.001 * (i + 1)
+    layer.rotation.x += 0.00035 * (i + 1)
   })
   camera.position.x += (pointer.x * 8 - camera.position.x) * 0.03
   camera.position.y += (-pointer.y * 8 - camera.position.y) * 0.03
@@ -79,17 +79,18 @@ function tick() {
 onMounted(() => {
   scene = new THREE.Scene()
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000)
-  camera.position.z = 140
+  camera.position.z = 110
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setClearAlpha(0)
   renderer.setSize(window.innerWidth, window.innerHeight)
   host.value.appendChild(renderer.domElement)
 
   sprite = makeSprite()
   layers = [
-    makeLayer(900, 2.6, 0x3987e5, 340),
-    makeLayer(600, 2.0, 0x199e70, 280),
-    makeLayer(280, 3.8, 0x9085e9, 420)
+    makeLayer(1100, 3.4, 0x5aa2f0, 320),
+    makeLayer(760, 2.6, 0x2fce96, 260),
+    makeLayer(420, 4.8, 0xb0a8ff, 390)
   ]
 
   window.addEventListener('resize', onResize)
@@ -119,7 +120,52 @@ onBeforeUnmount(() => {
 .starfield {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
+  overflow: hidden;
   pointer-events: none;
+  transform: translateZ(0);
+}
+.starfield::before,
+.starfield::after {
+  content: '';
+  position: absolute;
+  inset: -12%;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 24px 36px, rgba(255, 255, 255, 0.92) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 116px 72px, rgba(90, 162, 240, 0.82) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 198px 26px, rgba(47, 206, 150, 0.72) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 68px 148px, rgba(176, 168, 255, 0.74) 0 1.3px, transparent 2.1px),
+    radial-gradient(circle at 222px 128px, rgba(255, 255, 255, 0.78) 0 1px, transparent 1.8px);
+  background-size: 260px 190px;
+  opacity: 0.34;
+  animation: starfield-drift 22s linear infinite;
+}
+.starfield::after {
+  --scale: 1.55;
+  --drift-x: 4%;
+  --drift-y: -3%;
+  background-size: 340px 260px;
+  opacity: 0.22;
+  animation-duration: 34s;
+}
+.starfield canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+@keyframes starfield-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(var(--scale, 1));
+  }
+  to {
+    transform: translate3d(var(--drift-x, -3%), var(--drift-y, 2%), 0) scale(var(--scale, 1));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starfield::before,
+  .starfield::after {
+    animation: none;
+  }
 }
 </style>

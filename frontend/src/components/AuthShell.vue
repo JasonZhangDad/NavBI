@@ -54,6 +54,7 @@ onMounted(() => {
 <style scoped>
 .auth-page {
   position: relative;
+  isolation: isolate;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -88,7 +89,7 @@ onMounted(() => {
 }
 .auth-card {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   max-width: 400px;
   background: rgba(20, 24, 38, 0.75);

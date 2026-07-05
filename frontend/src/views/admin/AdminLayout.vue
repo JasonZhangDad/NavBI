@@ -67,6 +67,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .admin {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   background:
     radial-gradient(1000px 420px at 70% -10%, rgba(57, 135, 229, 0.12), transparent 60%),
@@ -76,7 +78,7 @@ onBeforeUnmount(() => {
 .aside,
 .body {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 .aside {
   background: rgba(255, 255, 255, 0.03);

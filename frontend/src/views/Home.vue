@@ -225,6 +225,8 @@ onMounted(() => {
 
 <style scoped>
 .portal {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -236,7 +238,7 @@ onMounted(() => {
 }
 .hero {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding: 64px 24px 40px;
   text-align: center;
 }
@@ -304,7 +306,7 @@ onMounted(() => {
 }
 .content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   flex: 1;
   width: 100%;
   max-width: 1080px;
@@ -375,7 +377,7 @@ onMounted(() => {
 }
 .site-footer {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 1080px;
   margin: 0 auto;
   padding: 24px;
@@ -408,7 +410,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 10;
+  z-index: 3;
 }
 .tb-btn {
   display: inline-flex;
