@@ -1,0 +1,24 @@
+{
+  "name": "NavBI Pro",
+  "short_name": "NavBI",
+  "description": "精选 AI 工具、开发、设计、影音、资讯常用网站，支持搜索与分类过滤，一站直达。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "/icons/navbi-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/navbi-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
