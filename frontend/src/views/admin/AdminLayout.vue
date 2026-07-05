@@ -146,4 +146,47 @@ onBeforeUnmount(() => {
 .download-link:hover {
   color: #1baf7a;
 }
+
+/* ── 平板/手机：侧栏折叠为顶部横向菜单条 ── */
+@media (max-width: 768px) {
+  .admin {
+    flex-direction: column;
+  }
+  .aside {
+    width: 100% !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .brand {
+    padding: 12px 8px;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .menu {
+    display: flex;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .menu::-webkit-scrollbar {
+    display: none;
+  }
+  .menu :deep(.el-menu-item) {
+    white-space: nowrap;
+    height: 42px;
+    line-height: 42px;
+    margin: 6px 2px;
+    padding: 0 10px;
+  }
+  .header {
+    padding: 0 12px;
+  }
+  .body :deep(.el-main) {
+    padding: 12px;
+  }
+}
 </style>

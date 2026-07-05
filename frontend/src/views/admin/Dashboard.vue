@@ -411,7 +411,7 @@ onBeforeUnmount(() => {
 }
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -463,14 +463,14 @@ onBeforeUnmount(() => {
 }
 .row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 14px;
 }
 .row .panel {
   margin-bottom: 14px;
 }
 .row-2 {
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
 }
 .chart {
   height: 260px;
