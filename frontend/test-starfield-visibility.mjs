@@ -21,7 +21,9 @@ const adminLayout = read('src/views/admin/AdminLayout.vue')
 
 assert(starfield.includes('z-index: 1'), 'Starfield canvas should sit above page backgrounds')
 assert(starfield.includes('transform: translateZ(0)'), 'Starfield canvas should have its own compositing layer')
-assert(starfield.includes('camera.position.z = 110'), 'Camera should be close enough for visible depth')
+assert(starfield.includes('CAMERA_Z = 110'), 'Camera should be close enough for visible depth')
+assert(starfield.includes('moveLayerTowardCamera'), 'Three.js stars should move toward the camera')
+assert(starfield.includes('position.needsUpdate = true'), 'Moving stars should flush geometry updates')
 assert(starfield.includes('.starfield::before'), 'Starfield should have a visible CSS fallback layer')
 assert(starfield.includes('@keyframes starfield-drift'), 'Starfield fallback should animate when motion is allowed')
 
