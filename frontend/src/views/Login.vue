@@ -74,6 +74,6 @@ async function submit() {
   width: 100%;
 }
 .forgot:hover {
-  color: #2a78d6;
+  color: #6ea8f0;
 }
 </style>
