@@ -242,7 +242,7 @@ onMounted(() => {
 }
 .hero h1 {
   margin: 0;
-  font-size: 40px;
+  font-size: clamp(30px, 8vw, 40px);
   letter-spacing: 1px;
   color: #fff;
   text-shadow: 0 0 28px rgba(57, 135, 229, 0.4);
