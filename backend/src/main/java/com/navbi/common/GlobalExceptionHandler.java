@@ -1,6 +1,7 @@
 package com.navbi.common;
 
 import com.navbi.auth.RateLimitExceededException;
+import com.navbi.download.DownloadLimitExceededException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +34,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
     public ApiResponse<Void> handleRateLimit(RateLimitExceededException e) {
         return ApiResponse.error(429, e.getMessage());
+    }
+
+    @ExceptionHandler(DownloadLimitExceededException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Void> handleDownloadLimit(DownloadLimitExceededException e) {
+        return ApiResponse.error(403, e.getMessage());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

@@ -1,5 +1,8 @@
 package com.navbi.download;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.navbi.auth.AppUser;
+import com.navbi.auth.AppUserMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -7,6 +10,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,13 +34,17 @@ public class DownloadController {
             "macos", new ClientFile("Cloudflare_WARP_2026.6.822.0.pkg", "application/octet-stream"));
 
     private final Path downloadDir;
+    private final AppUserMapper userMapper;
 
-    public DownloadController(@Value("${navbi.download.dir:/opt/navbi/downloads}") String downloadDir) {
+    public DownloadController(@Value("${navbi.download.dir:/opt/navbi/downloads}") String downloadDir,
+                              AppUserMapper userMapper) {
         this.downloadDir = Path.of(downloadDir).normalize();
+        this.userMapper = userMapper;
     }
 
     @GetMapping("/client/{platform}")
-    public ResponseEntity<Resource> client(@PathVariable String platform) throws IOException {
+    public ResponseEntity<Resource> client(@PathVariable String platform,
+                                           Authentication authentication) throws IOException {
         ClientFile clientFile = CLIENT_FILES.get(platform);
         if (clientFile == null) {
             return ResponseEntity.notFound().build();
@@ -45,6 +53,10 @@ public class DownloadController {
         Path file = downloadDir.resolve(clientFile.filename()).normalize();
         if (!file.startsWith(downloadDir) || !Files.isRegularFile(file) || !Files.isReadable(file)) {
             return ResponseEntity.notFound().build();
+        }
+
+        if (!isAdmin(authentication)) {
+            consumeDailyDownload(authentication.getName());
         }
 
         Resource resource = new FileSystemResource(file);
@@ -56,5 +68,23 @@ public class DownloadController {
                         .build()
                         .toString())
                 .body(resource);
+    }
+
+    private void consumeDailyDownload(String email) {
+        int updated = userMapper.consumeClientDownload(email);
+        if (updated == 1) {
+            return;
+        }
+
+        AppUser user = userMapper.selectOne(new LambdaQueryWrapper<AppUser>().eq(AppUser::getEmail, email));
+        if (user == null || Boolean.FALSE.equals(user.getEnabled())) {
+            throw new DownloadLimitExceededException("账号不可下载客户端，请联系管理员");
+        }
+        throw new DownloadLimitExceededException("今日客户端下载次数已用完，请联系管理员");
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 }

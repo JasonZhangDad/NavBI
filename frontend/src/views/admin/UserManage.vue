@@ -22,17 +22,39 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="今日下载" width="100">
+        <template #default="{ row }">
+          {{ row.downloadsUsedToday || 0 }}/{{ row.dailyDownloadLimit || 0 }}
+        </template>
+      </el-table-column>
+      <el-table-column label="每日额度" width="130">
+        <template #default="{ row }">
+          <el-input-number
+            v-model="row.dailyDownloadLimit"
+            size="small"
+            :min="0"
+            :controls="false"
+            class="limit-input"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column label="今日剩余" width="90">
+        <template #default="{ row }">{{ remainingToday(row) }}</template>
+      </el-table-column>
       <el-table-column prop="createdAt" label="注册时间" width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="100" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-button
-            size="small"
-            :type="row.enabled ? 'danger' : 'success'"
-            plain
-            @click="toggleEnabled(row)"
-          >{{ row.enabled ? '封禁' : '解封' }}</el-button>
+          <div class="actions">
+            <el-button size="small" type="primary" plain @click="saveDownloadLimit(row)">保存额度</el-button>
+            <el-button
+              size="small"
+              :type="row.enabled ? 'danger' : 'success'"
+              plain
+              @click="toggleEnabled(row)"
+            >{{ row.enabled ? '封禁' : '解封' }}</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -79,6 +101,21 @@ async function toggleEnabled(row) {
   load()
 }
 
+async function saveDownloadLimit(row) {
+  const dailyDownloadLimit = Number(row.dailyDownloadLimit)
+  if (!Number.isInteger(dailyDownloadLimit) || dailyDownloadLimit < 0) {
+    ElMessage.error('每日额度必须是非负整数')
+    return
+  }
+  await http.patch(`/admin/users/${row.id}/download-limit`, { dailyDownloadLimit })
+  ElMessage.success('额度已保存')
+  load()
+}
+
+function remainingToday(row) {
+  return Math.max(Number(row.dailyDownloadLimit || 0) - Number(row.downloadsUsedToday || 0), 0)
+}
+
 function formatTime(t) {
   if (!t) return '-'
   return t.replace('T', ' ').substring(0, 19)
@@ -102,5 +139,15 @@ onMounted(load)
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+.limit-input {
+  width: 92px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.actions .el-button {
+  margin-left: 0;
 }
 </style>

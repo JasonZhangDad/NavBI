@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -17,6 +18,9 @@ public class AppUser {
     private String passwordHash;
     private String role;
     private Boolean enabled;
+    private Integer dailyDownloadLimit;
+    private Integer downloadsUsedToday;
+    private LocalDate downloadLimitResetDate;
     private String registerIp;
     private String country;
     private String province;
