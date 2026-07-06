@@ -103,6 +103,22 @@ class DownloadApiTest extends ApiTestBase {
         org.assertj.core.api.Assertions.assertThat(resetDate).isEqualTo(LocalDate.now());
     }
 
+    @Test
+    void defaultDailyLimitAllowsOneDownloadPerAccount() throws Exception {
+        insertUserWithDefaultLimit("user@example.com");
+        String token = jwtService.generate("user@example.com", "USER");
+
+        mvc.perform(get("/api/downloads/client/windows")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes("windows".getBytes()));
+
+        mvc.perform(get("/api/downloads/client/macos")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("今日客户端下载次数已用完，请联系管理员"));
+    }
+
     private void insertUser(String email, int dailyDownloadLimit, int downloadsUsedToday, LocalDate resetDate) {
         jdbc.update("""
                 INSERT INTO app_user
@@ -110,5 +126,12 @@ class DownloadApiTest extends ApiTestBase {
                      daily_download_limit, downloads_used_today, download_limit_reset_date)
                 VALUES (?, ?, 'USER', TRUE, ?, ?, ?)
                 """, email, "unused", dailyDownloadLimit, downloadsUsedToday, resetDate);
+    }
+
+    private void insertUserWithDefaultLimit(String email) {
+        jdbc.update("""
+                INSERT INTO app_user (email, password_hash, role, enabled)
+                VALUES (?, ?, 'USER', TRUE)
+                """, email, "unused");
     }
 }

@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS app_user (
   password_hash VARCHAR(100) NOT NULL,
   role VARCHAR(16) NOT NULL DEFAULT 'USER',
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  daily_download_limit INT NOT NULL DEFAULT 2,
+  daily_download_limit INT NOT NULL DEFAULT 1,
   downloads_used_today INT NOT NULL DEFAULT 0,
   download_limit_reset_date DATE NOT NULL DEFAULT CURRENT_DATE,
   register_ip VARCHAR(64),
@@ -74,9 +74,11 @@ CREATE TABLE IF NOT EXISTS app_user (
 
 -- 安全迁移：已有表补列
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
-ALTER TABLE app_user ADD COLUMN IF NOT EXISTS daily_download_limit INT NOT NULL DEFAULT 2;
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS daily_download_limit INT NOT NULL DEFAULT 1;
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS downloads_used_today INT NOT NULL DEFAULT 0;
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS download_limit_reset_date DATE NOT NULL DEFAULT CURRENT_DATE;
+ALTER TABLE app_user ALTER COLUMN daily_download_limit SET DEFAULT 1;
+UPDATE app_user SET daily_download_limit = 1 WHERE daily_download_limit = 2;
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS register_ip VARCHAR(64);
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS country VARCHAR(64);
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS province VARCHAR(64);
